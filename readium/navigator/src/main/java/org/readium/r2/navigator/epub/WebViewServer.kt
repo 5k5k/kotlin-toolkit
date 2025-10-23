@@ -57,7 +57,7 @@ internal class WebViewServer(
      * https://readium/publication/ serves the publication resources through its fetcher.
      * https://readium/assets/ serves the application assets.
      */
-    fun shouldInterceptRequest(request: WebResourceRequest, css: ReadiumCss): WebResourceResponse? {
+    fun shouldInterceptRequest(request: WebResourceRequest, css: ReadiumCss, isLandscape: Boolean = false, doubleLeft: Boolean? = null): WebResourceResponse? {
         if (request.url.host != "readium") return null
         val path = request.url.path ?: return null
 
@@ -69,7 +69,9 @@ internal class WebViewServer(
                 servePublicationResource(
                     href = href,
                     range = HttpHeaders(request.requestHeaders).range,
-                    css = css
+                    css = css,
+                    isLandscape,
+                    doubleLeft
                 )
             }
             path.startsWith("/assets/") && isServedAsset(path.removePrefix("/assets/")) -> {
@@ -84,7 +86,7 @@ internal class WebViewServer(
      *
      * If the [Resource] is an HTML document, injects the required JavaScript and CSS files.
      */
-    private fun servePublicationResource(href: Url, range: HttpRange?, css: ReadiumCss): WebResourceResponse {
+    private fun servePublicationResource(href: Url, range: HttpRange?, css: ReadiumCss, isLandscape: Boolean = false, doubleLeft: Boolean? = null): WebResourceResponse {
         val link = publication.linkWithHref(href)
             // Query parameters must be kept as they might be relevant for the fetcher.
             ?.copy(href = Href(href))
@@ -114,7 +116,9 @@ internal class WebViewServer(
                     mediaType = it,
                     css,
                     baseHref = assetsBaseHref,
-                    disableSelectionWhenProtected = disableSelectionWhenProtected
+                    disableSelectionWhenProtected = disableSelectionWhenProtected,
+                    isLandscape,
+                    doubleLeft
                 )
             }
 

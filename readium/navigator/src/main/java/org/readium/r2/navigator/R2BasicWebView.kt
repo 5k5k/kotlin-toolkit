@@ -86,7 +86,7 @@ internal open class R2BasicWebView(context: Context, attrs: AttributeSet) : WebV
         fun shouldOverrideUrlLoading(webView: WebView, request: WebResourceRequest): Boolean = false
 
         @InternalReadiumApi
-        fun shouldInterceptRequest(webView: WebView, request: WebResourceRequest): WebResourceResponse? = null
+        fun shouldInterceptRequest(webView: WebView, request: WebResourceRequest, doubleLeft: Boolean? = null): WebResourceResponse? = null
 
         @InternalReadiumApi
         fun onFootnoteLinkActivated(url: AbsoluteUrl, context: HyperlinkNavigator.FootnoteContext)
@@ -588,7 +588,7 @@ internal open class R2BasicWebView(context: Context, attrs: AttributeSet) : WebV
         return listener?.shouldOverrideUrlLoading(this, request) ?: false
     }
 
-    internal fun shouldInterceptRequest(webView: WebView, request: WebResourceRequest): WebResourceResponse? {
+    internal fun shouldInterceptRequest(webView: WebView, request: WebResourceRequest, doubleLeft: Boolean? = null): WebResourceResponse? {
         // Prevent favicon.ico to be loaded, this was causing a NullPointerException in NanoHttp
         if (!request.isForMainFrame && request.url.path?.endsWith("/favicon.ico") == true) {
             tryOrLog<Unit> {
@@ -596,7 +596,7 @@ internal open class R2BasicWebView(context: Context, attrs: AttributeSet) : WebV
             }
         }
 
-        return listener?.shouldInterceptRequest(webView, request)
+        return listener?.shouldInterceptRequest(webView, request, doubleLeft)
     }
 
     // Text selection ActionMode overrides

@@ -33,6 +33,8 @@ internal fun Resource.injectHtml(
     css: ReadiumCss,
     baseHref: AbsoluteUrl,
     disableSelectionWhenProtected: Boolean,
+    isLandscape: Boolean = false,
+    doubleLeft: Boolean? = null
 ): Resource =
     TransformingResource(this) { bytes ->
         if (!mediaType.isHtml) {
@@ -46,6 +48,22 @@ internal fun Resource.injectHtml(
             injectables.add(
                 script(baseHref.resolve(Url("readium/scripts/readium-fixed.js")!!))
             )
+            if (isLandscape) {
+                injectables.add(
+                    script(baseHref.resolve(Url("readium/scripts/fixed_fix.js")!!))
+                )
+                doubleLeft?.let {
+                    if (it) {
+                        injectables.add(
+                            script(baseHref.resolve(Url("readium/scripts/fixed_fix_left.js")!!))
+                        )
+                    } else {
+                        injectables.add(
+                            script(baseHref.resolve(Url("readium/scripts/fixed_fix_right.js")!!))
+                        )
+                    }
+                }
+            }
         } else {
             content = try {
                 css.injectHtml(content)

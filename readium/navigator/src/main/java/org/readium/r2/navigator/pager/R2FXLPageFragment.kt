@@ -10,6 +10,8 @@
 package org.readium.r2.navigator.pager
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.res.Configuration
 import android.graphics.PointF
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -18,12 +20,15 @@ import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import android.widget.RelativeLayout
 import androidx.core.os.BundleCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.webkit.WebViewClientCompat
 import org.readium.r2.navigator.R2BasicWebView
 import org.readium.r2.navigator.databinding.ReadiumNavigatorFragmentFxllayoutDoubleBinding
+import org.readium.r2.navigator.databinding.ReadiumNavigatorFragmentFxllayoutDoubleLandscapeBinding
+import org.readium.r2.navigator.databinding.ReadiumNavigatorFragmentFxllayoutSingleLandscapeBinding
 import org.readium.r2.navigator.databinding.ReadiumNavigatorFragmentFxllayoutSingleBinding
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubNavigatorViewModel
@@ -32,6 +37,7 @@ import org.readium.r2.navigator.epub.fxl.R2FXLOnDoubleTapListener
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.util.Url
 
+@Suppress("DEPRECATION")
 internal class R2FXLPageFragment : Fragment() {
 
     private val firstResourceUrl: Url?
@@ -52,7 +58,12 @@ internal class R2FXLPageFragment : Fragment() {
     private val doubleBinding get() = _doubleBinding!!
 
     private var _singleBinding: ReadiumNavigatorFragmentFxllayoutSingleBinding? = null
+    private var _singleLandscapeBinding: ReadiumNavigatorFragmentFxllayoutSingleLandscapeBinding? = null
     private val singleBinding get() = _singleBinding!!
+    private val singleLandscapeBinding get() = _singleLandscapeBinding!!
+
+    private var _doubleLandscapeBinding: ReadiumNavigatorFragmentFxllayoutDoubleLandscapeBinding? = null
+    private val doubleLandscapeBinding get() = _doubleLandscapeBinding!!
 
     private val navigator: EpubNavigatorFragment?
         get() = parentFragment as? EpubNavigatorFragment
@@ -68,22 +79,45 @@ internal class R2FXLPageFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         secondResourceUrl?.let {
-            _doubleBinding = ReadiumNavigatorFragmentFxllayoutDoubleBinding.inflate(
-                inflater,
-                container,
-                false
-            )
-            val view: View = doubleBinding.root
+            val landscape = isLandscape()
+            if (landscape) {
+                _doubleLandscapeBinding = ReadiumNavigatorFragmentFxllayoutDoubleLandscapeBinding.inflate(
+                    inflater,
+                    container,
+                    false
+                )
+                val statusBarHeightResId = resources.getIdentifier("status_bar_height", "dimen", "android")
+                val height = if (statusBarHeightResId > 0) {
+                    resources.getDimensionPixelSize(statusBarHeightResId)
+                } else {
+                    0
+                }
+                doubleLandscapeBinding.systemBar.layoutParams = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height)
+
+                val bottomHeight = getNavigationBarHeightByInsets(requireActivity())
+                doubleLandscapeBinding.systemBottomBar.apply {
+                    layoutParams.height = bottomHeight
+                    requestLayout()
+                }
+            } else {
+                _doubleBinding = ReadiumNavigatorFragmentFxllayoutDoubleBinding.inflate(
+                    inflater,
+                    container,
+                    false
+                )
+            }
+
+            val view: View = if (landscape) doubleLandscapeBinding.root else doubleBinding.root
             view.setPadding(0, 0, 0, 0)
 
-            val r2FXLLayout = doubleBinding.r2FXLLayout
+            val r2FXLLayout = if (landscape) doubleLandscapeBinding.r2FXLLayout else doubleBinding.r2FXLLayout
             r2FXLLayout.isAllowParentInterceptOnScaled = true
 
-            val left = doubleBinding.firstWebView
-            val right = doubleBinding.secondWebView
+            val left = if (landscape) doubleLandscapeBinding.firstWebView else doubleBinding.firstWebView
+            val right = if (landscape) doubleLandscapeBinding.secondWebView else doubleBinding.secondWebView
 
-            setupWebView(left, firstResourceLink, firstResourceUrl)
-            setupWebView(right, secondResourceLink, secondResourceUrl)
+            setupWebView(left, firstResourceLink, firstResourceUrl, true)
+            setupWebView(right, secondResourceLink, secondResourceUrl, false)
 
             r2FXLLayout.addOnDoubleTapListener(R2FXLOnDoubleTapListener(true))
             r2FXLLayout.addOnTapListener(object : R2FXLLayout.OnTapListener {
@@ -94,18 +128,41 @@ internal class R2FXLPageFragment : Fragment() {
 
             return view
         } ?: run {
-            _singleBinding = ReadiumNavigatorFragmentFxllayoutSingleBinding.inflate(
-                inflater,
-                container,
-                false
-            )
-            val view: View = singleBinding.root
+            val landscape = isLandscape()
+            if (landscape) {
+                _singleLandscapeBinding = ReadiumNavigatorFragmentFxllayoutSingleLandscapeBinding.inflate(
+                    inflater,
+                    container,
+                    false
+                )
+                val statusBarHeightResId = resources.getIdentifier("status_bar_height", "dimen", "android")
+                val height = if (statusBarHeightResId > 0) {
+                    resources.getDimensionPixelSize(statusBarHeightResId)
+                } else {
+                    0
+                }
+                singleLandscapeBinding.systemBar.layoutParams = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height)
+
+                val bottomHeight = getNavigationBarHeightByInsets(requireActivity())
+                singleLandscapeBinding.systemBottomBar.apply {
+                    layoutParams.height = bottomHeight
+                    requestLayout()
+                }
+            } else {
+                _singleBinding = ReadiumNavigatorFragmentFxllayoutSingleBinding.inflate(
+                    inflater,
+                    container,
+                    false
+                )
+            }
+
+            val view: View = if (landscape) singleLandscapeBinding.root else singleBinding.root
             view.setPadding(0, 0, 0, 0)
 
-            val r2FXLLayout = singleBinding.r2FXLLayout
+            val r2FXLLayout = if (landscape) singleLandscapeBinding.r2FXLLayout else singleBinding.r2FXLLayout
             r2FXLLayout.isAllowParentInterceptOnScaled = true
 
-            val webview = singleBinding.webViewSingle
+            val webview = if (landscape) singleLandscapeBinding.webViewSingle else singleBinding.webViewSingle
 
             setupWebView(webview, firstResourceLink, firstResourceUrl)
 
@@ -138,12 +195,25 @@ internal class R2FXLPageFragment : Fragment() {
         }
         _singleBinding = null
         _doubleBinding = null
+        _singleLandscapeBinding = null
 
         super.onDestroyView()
     }
 
+    fun isLandscape(): Boolean {
+        return requireActivity().resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    }
+
+    fun getNavigationBarHeightByInsets(activity: Activity): Int {
+        val insets = activity.window.decorView.rootWindowInsets
+        if (insets != null) {
+            return insets.systemWindowInsetBottom
+        }
+        return 0
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
-    private fun setupWebView(webView: R2BasicWebView, link: Link?, resourceUrl: Url?) {
+    private fun setupWebView(webView: R2BasicWebView, link: Link?, resourceUrl: Url?, doubleLeft: Boolean? = null) {
         webViews.add(webView)
         navigator?.let {
             webView.listener = it.webViewListener
@@ -173,7 +243,7 @@ internal class R2FXLPageFragment : Fragment() {
                 (webView as? R2BasicWebView)?.shouldOverrideUrlLoading(request) ?: false
 
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
-                (webView as? R2BasicWebView)?.shouldInterceptRequest(view, request)
+                (webView as? R2BasicWebView)?.shouldInterceptRequest(view, request, doubleLeft)
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)

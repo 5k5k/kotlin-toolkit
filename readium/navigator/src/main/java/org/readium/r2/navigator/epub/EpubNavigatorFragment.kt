@@ -8,6 +8,7 @@
 
 package org.readium.r2.navigator.epub
 
+import android.app.Activity
 import android.graphics.PointF
 import android.graphics.RectF
 import android.os.Bundle
@@ -108,6 +109,7 @@ public typealias JavascriptInterfaceFactory = (resource: Link) -> Any?
  *
  * To use this [Fragment], create a factory with `EpubNavigatorFragment.createFactory()`.
  */
+@Suppress("DEPRECATION")
 @OptIn(ExperimentalReadiumApi::class, DelicateReadiumApi::class)
 public class EpubNavigatorFragment internal constructor(
     publication: Publication,
@@ -339,6 +341,14 @@ public class EpubNavigatorFragment internal constructor(
     private var _binding: ReadiumNavigatorViewpagerBinding? = null
     private val binding get() = _binding!!
 
+    public fun getNavigationBarHeightByInsets(activity: Activity): Int {
+        val insets = activity.window.decorView.rootWindowInsets
+        if (insets != null) {
+            return insets.systemWindowInsetBottom
+        }
+        return 0
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -432,7 +442,7 @@ public class EpubNavigatorFragment internal constructor(
         resourcePager.id = R.id.resourcePager
         resourcePager.publicationType = when (publication.metadata.presentation.layout) {
             EpubLayout.REFLOWABLE, null -> R2ViewPager.PublicationType.EPUB
-            EpubLayout.FIXED -> R2ViewPager.PublicationType.FXL
+            EpubLayout.FIXED -> R2ViewPager.PublicationType.FXL // 点击滚动会被移除
         }
         resourcePager.setBackgroundColor(viewModel.settings.value.effectiveBackgroundColor)
         // Let the page views handle the keyboard events.
@@ -758,6 +768,10 @@ public class EpubNavigatorFragment internal constructor(
         run(viewModel.applyDecorations(decorations, group))
     }
 
+    public fun isLandscape(): Boolean {
+        return requireActivity().resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    }
+
     // R2BasicWebView.Listener
 
     internal val webViewListener: R2BasicWebView.Listener = WebViewListener()
@@ -859,8 +873,15 @@ public class EpubNavigatorFragment internal constructor(
             viewModel.navigateToUrl(url, context)
         }
 
-        override fun shouldInterceptRequest(webView: WebView, request: WebResourceRequest): WebResourceResponse? =
-            viewModel.shouldInterceptRequest(request)
+        var isLandscape = false
+
+        override fun shouldInterceptRequest(webView: WebView, request: WebResourceRequest, doubleLeft: Boolean?): WebResourceResponse? {
+            val activity = webView.context
+            if (activity is Activity) {
+                isLandscape = activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            }
+            return viewModel.shouldInterceptRequest(request, isLandscape, doubleLeft)
+        }
 
         override fun resourceAtUrl(url: Url): Resource? =
             viewModel.internalLinkFromUrl(url)
