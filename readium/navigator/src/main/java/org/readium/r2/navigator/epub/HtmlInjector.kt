@@ -7,6 +7,7 @@
 package org.readium.r2.navigator.epub
 
 import org.readium.r2.navigator.epub.css.ReadiumCss
+import org.readium.r2.navigator.preferences.ReadingProgression
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.epub.EpubLayout
@@ -45,6 +46,19 @@ internal fun Resource.injectHtml(
         val injectables = mutableListOf<String>()
 
         if (publication.metadata.presentation.layout == EpubLayout.FIXED) {
+            if (isLandscape) {
+                css.userProperties.backgroundColor?.let {
+                    injectables.add(
+                        """
+                            <style>
+                            body {
+                                background-color: ${it.toCss()};
+                            }
+                            </style>
+                        """
+                    )
+                }
+            }
             injectables.add(
                 script(baseHref.resolve(Url("readium/scripts/readium-fixed.js")!!))
             )
@@ -53,14 +67,26 @@ internal fun Resource.injectHtml(
                     script(baseHref.resolve(Url("readium/scripts/fixed_fix.js")!!))
                 )
                 doubleLeft?.let {
-                    if (it) {
-                        injectables.add(
-                            script(baseHref.resolve(Url("readium/scripts/fixed_fix_left.js")!!))
-                        )
+                    if (css.layout.readingProgression == ReadingProgression.LTR) {
+                        if (!it) {
+                            injectables.add(
+                                script(baseHref.resolve(Url("readium/scripts/fixed_fix_left.js")!!))
+                            )
+                        } else {
+                            injectables.add(
+                                script(baseHref.resolve(Url("readium/scripts/fixed_fix_right.js")!!))
+                            )
+                        }
                     } else {
-                        injectables.add(
-                            script(baseHref.resolve(Url("readium/scripts/fixed_fix_right.js")!!))
-                        )
+                        if (it) {
+                            injectables.add(
+                                script(baseHref.resolve(Url("readium/scripts/fixed_fix_left.js")!!))
+                            )
+                        } else {
+                            injectables.add(
+                                script(baseHref.resolve(Url("readium/scripts/fixed_fix_right.js")!!))
+                            )
+                        }
                     }
                 }
             }

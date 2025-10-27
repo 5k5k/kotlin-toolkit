@@ -183,6 +183,14 @@ internal data class ReadiumCss(
         content.insert(index, " style=\"$css\"")
     }
 
+    fun injectBackground(mapString: String, html: String): String  {
+        val content = StringBuilder(html)
+        val css = mapString.replace("\"", "&quot;")
+        val index = content.indexForTagAttributes("html")
+        content.insert(index, " style=\"$css\"")
+        return content.toString()
+    }
+
     /**
      * Inject the `dir` attribute in `html` and `body`.
      *

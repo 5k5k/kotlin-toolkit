@@ -17,7 +17,6 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: white;
         }
         .main {
             width: 100%;
@@ -25,7 +24,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: white;
           }
          svg {
             max-width: 100%;

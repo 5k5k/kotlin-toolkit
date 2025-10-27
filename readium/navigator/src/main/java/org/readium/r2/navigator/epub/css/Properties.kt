@@ -105,7 +105,7 @@ public data class UserProperties(
 
     // Colors
     val textColor: Color? = null,
-    val backgroundColor: Color? = null,
+    var backgroundColor: Color? = null,
 
     // Typography
     val fontOverride: Boolean? = null,
