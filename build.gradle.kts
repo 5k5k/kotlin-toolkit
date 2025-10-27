@@ -40,3 +40,19 @@ tasks.withType<DokkaTaskPartial>().configureEach {
 tasks.named<org.jetbrains.dokka.gradle.DokkaMultiModuleTask>("dokkaGfmMultiModule").configure {
     outputDirectory.set(file("${projectDir.path}/docs"))
 }
+
+//tasks.withType<Jar>().configureEach {
+//    if (name.contains("javadoc", ignoreCase = true)) {
+//        enabled = false
+//    }
+//}
+//
+//afterEvaluate {
+//    tasks.findByName("javaDocReleaseJar")?.enabled = false
+////    tasks.findByName("signMavenPublication")?.enabled = false
+//}
+//
+//
+//tasks.withType<Sign>().configureEach {
+//    enabled = false
+//}
