@@ -56,3 +56,23 @@ tasks.named<org.jetbrains.dokka.gradle.DokkaMultiModuleTask>("dokkaGfmMultiModul
 //tasks.withType<Sign>().configureEach {
 //    enabled = false
 //}
+
+subprojects {
+    afterEvaluate {
+        // 禁用所有 javadoc 任务
+        tasks.matching { it.name.lowercase().contains("javadoc") }.configureEach {
+            (this as org.gradle.api.Task).enabled = false
+        }
+
+        // 检查是否存在签名 key
+        val hasSigningKey =
+            project.hasProperty("signing.keyId") || project.hasProperty("signing.key")
+
+        if (!hasSigningKey) {
+            println("⚠️ [${project.name}] Disable signing for JitPack (no key).")
+            tasks.matching { it.name.lowercase().contains("sign") }.configureEach {
+                (this as org.gradle.api.Task).enabled = false
+            }
+        }
+    }
+}
