@@ -94,6 +94,16 @@ internal data class ReadiumCss(
                         """.trimIndent()
                     )
                 }
+
+                add(
+                    """
+                    <style type="text/css">
+                    :root[style*="--USER__textColor"] .kakao {
+                        color: #000000 !important
+                    }
+                    </style>
+                        """.trimIndent()
+                )
             }.joinToString("\n") + "\n"
         )
     }

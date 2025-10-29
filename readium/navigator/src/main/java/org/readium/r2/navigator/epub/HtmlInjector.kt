@@ -51,9 +51,9 @@ internal fun Resource.injectHtml(
                     injectables.add(
                         """
                             <style>
-                            body {
-                                background-color: ${it.toCss()};
-                            }
+                                :root[style*="--USER__backgroundColor"] {
+                                    background-color: var(--USER__backgroundColor) !important
+                                }
                             </style>
                         """
                     )
