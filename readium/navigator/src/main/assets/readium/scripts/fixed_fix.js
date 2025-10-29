@@ -12,30 +12,37 @@
     var style = document.createElement('style');
     style.innerHTML = `
         html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            overflow: hidden !important;
         }
-        .main {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-         svg {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            display: block;
+
+        svg {
+            display: block !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: contain !important;
         }
-        image {
-            width: 100%;
-            height: 100%;
-             display: block;
-            object-fit: contain;
+
+        svg[viewBox] {
+            preserveAspectRatio: xMidYMid meet !important;
+        }
+
+        svg image {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            preserveAspectRatio: xMidYMid meet !important;
+        }
+
+        div.main, div {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            width: 100% !important;
+            height: 100% !important;
         }
     `;
     document.head.appendChild(style);

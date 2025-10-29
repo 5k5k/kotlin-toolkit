@@ -79,54 +79,77 @@ internal class R2FXLPageFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         secondResourceUrl?.let {
-            val landscape = isLandscape()
-            if (landscape) {
-                _doubleLandscapeBinding = ReadiumNavigatorFragmentFxllayoutDoubleLandscapeBinding.inflate(
-                    inflater,
-                    container,
-                    false
-                )
-                val statusBarHeightResId = resources.getIdentifier("status_bar_height", "dimen", "android")
-                val height = if (statusBarHeightResId > 0) {
-                    resources.getDimensionPixelSize(statusBarHeightResId)
+            if (firstResourceUrl == null ){
+                val landscape = isLandscape()
+                if (landscape) {
+                    _singleLandscapeBinding = ReadiumNavigatorFragmentFxllayoutSingleLandscapeBinding.inflate(
+                        inflater,
+                        container,
+                        false
+                    )
                 } else {
-                    0
+                    _singleBinding = ReadiumNavigatorFragmentFxllayoutSingleBinding.inflate(
+                        inflater,
+                        container,
+                        false
+                    )
                 }
-                doubleLandscapeBinding.systemBar.layoutParams = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height)
 
-                val bottomHeight = getNavigationBarHeightByInsets(requireActivity())
-                doubleLandscapeBinding.systemBottomBar.apply {
-                    layoutParams.height = bottomHeight
-                    requestLayout()
-                }
+                val view: View = if (landscape) singleLandscapeBinding.root else singleBinding.root
+                view.setPadding(0, 0, 0, 0)
+
+                val r2FXLLayout = if (landscape) singleLandscapeBinding.r2FXLLayout else singleBinding.r2FXLLayout
+                r2FXLLayout.isAllowParentInterceptOnScaled = true
+
+                val webview = if (landscape) singleLandscapeBinding.webViewSingle else singleBinding.webViewSingle
+
+                setupWebView(webview, secondResourceLink, secondResourceUrl)
+
+                r2FXLLayout.addOnDoubleTapListener(R2FXLOnDoubleTapListener(true))
+                r2FXLLayout.addOnTapListener(object : R2FXLLayout.OnTapListener {
+                    override fun onTap(view: R2FXLLayout, info: R2FXLLayout.TapInfo): Boolean {
+                        return webview.listener?.onTap(PointF(info.x, info.y)) ?: false
+                    }
+                })
+
+                return view
             } else {
-                _doubleBinding = ReadiumNavigatorFragmentFxllayoutDoubleBinding.inflate(
-                    inflater,
-                    container,
-                    false
-                )
-            }
-
-            val view: View = if (landscape) doubleLandscapeBinding.root else doubleBinding.root
-            view.setPadding(0, 0, 0, 0)
-
-            val r2FXLLayout = if (landscape) doubleLandscapeBinding.r2FXLLayout else doubleBinding.r2FXLLayout
-            r2FXLLayout.isAllowParentInterceptOnScaled = true
-
-            val left = if (landscape) doubleLandscapeBinding.firstWebView else doubleBinding.firstWebView
-            val right = if (landscape) doubleLandscapeBinding.secondWebView else doubleBinding.secondWebView
-
-            setupWebView(left, firstResourceLink, firstResourceUrl, true)
-            setupWebView(right, secondResourceLink, secondResourceUrl, false)
-
-            r2FXLLayout.addOnDoubleTapListener(R2FXLOnDoubleTapListener(true))
-            r2FXLLayout.addOnTapListener(object : R2FXLLayout.OnTapListener {
-                override fun onTap(view: R2FXLLayout, info: R2FXLLayout.TapInfo): Boolean {
-                    return left.listener?.onTap(PointF(info.x, info.y)) ?: false
+                val landscape = isLandscape()
+                if (landscape) {
+                    _doubleLandscapeBinding = ReadiumNavigatorFragmentFxllayoutDoubleLandscapeBinding.inflate(
+                        inflater,
+                        container,
+                        false
+                    )
+                } else {
+                    _doubleBinding = ReadiumNavigatorFragmentFxllayoutDoubleBinding.inflate(
+                        inflater,
+                        container,
+                        false
+                    )
                 }
-            })
 
-            return view
+                val view: View = if (landscape) doubleLandscapeBinding.root else doubleBinding.root
+                view.setPadding(0, 0, 0, 0)
+
+                val r2FXLLayout = if (landscape) doubleLandscapeBinding.r2FXLLayout else doubleBinding.r2FXLLayout
+                r2FXLLayout.isAllowParentInterceptOnScaled = true
+
+                val left = if (landscape) doubleLandscapeBinding.firstWebView else doubleBinding.firstWebView
+                val right = if (landscape) doubleLandscapeBinding.secondWebView else doubleBinding.secondWebView
+
+                setupWebView(left, firstResourceLink, firstResourceUrl, true)
+                setupWebView(right, secondResourceLink, secondResourceUrl, false)
+
+                r2FXLLayout.addOnDoubleTapListener(R2FXLOnDoubleTapListener(true))
+                r2FXLLayout.addOnTapListener(object : R2FXLLayout.OnTapListener {
+                    override fun onTap(view: R2FXLLayout, info: R2FXLLayout.TapInfo): Boolean {
+                        return left.listener?.onTap(PointF(info.x, info.y)) ?: false
+                    }
+                })
+
+                return view
+            }
         } ?: run {
             val landscape = isLandscape()
             if (landscape) {
@@ -135,19 +158,6 @@ internal class R2FXLPageFragment : Fragment() {
                     container,
                     false
                 )
-                val statusBarHeightResId = resources.getIdentifier("status_bar_height", "dimen", "android")
-                val height = if (statusBarHeightResId > 0) {
-                    resources.getDimensionPixelSize(statusBarHeightResId)
-                } else {
-                    0
-                }
-                singleLandscapeBinding.systemBar.layoutParams = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height)
-
-                val bottomHeight = getNavigationBarHeightByInsets(requireActivity())
-                singleLandscapeBinding.systemBottomBar.apply {
-                    layoutParams.height = bottomHeight
-                    requestLayout()
-                }
             } else {
                 _singleBinding = ReadiumNavigatorFragmentFxllayoutSingleBinding.inflate(
                     inflater,
@@ -196,7 +206,7 @@ internal class R2FXLPageFragment : Fragment() {
         _singleBinding = null
         _doubleBinding = null
         _singleLandscapeBinding = null
-
+        _doubleLandscapeBinding = null
         super.onDestroyView()
     }
 
