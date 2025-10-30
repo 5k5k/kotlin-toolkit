@@ -35,14 +35,15 @@ internal fun Resource.injectHtml(
     baseHref: AbsoluteUrl,
     disableSelectionWhenProtected: Boolean,
     isLandscape: Boolean = false,
-    doubleLeft: Boolean? = null
+    doubleLeft: Boolean? = null,
+    combineHtml: String? = null
 ): Resource =
     TransformingResource(this) { bytes ->
         if (!mediaType.isHtml) {
             return@TransformingResource Try.success(bytes)
         }
 
-        var content = bytes.toString(mediaType.charset ?: Charsets.UTF_8).trim()
+        var content = if (combineHtml == null) bytes.toString(mediaType.charset ?: Charsets.UTF_8).trim() else combineHtml
         val injectables = mutableListOf<String>()
 
         if (publication.metadata.presentation.layout == EpubLayout.FIXED) {

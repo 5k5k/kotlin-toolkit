@@ -96,6 +96,9 @@ import org.readium.r2.shared.util.Url
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.shared.util.resource.Resource
 import org.readium.r2.shared.util.toAbsoluteUrl
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 /**
  * Factory for a [JavascriptInterface] which will be injected in the web views.
@@ -369,6 +372,13 @@ public class EpubNavigatorFragment internal constructor(
                         positionCount = positionsByReadingOrder.getOrNull(index)?.size ?: 0
                     )
                 }
+//                resourcesSingle = readingOrder.mapIndexed { index, link ->
+//                    PageResource.EpubReflowable(
+//                        link = link,
+//                        url = viewModel.urlTo(link),
+//                        positionCount = positionsByReadingOrder.getOrNull(index)?.size ?: 0
+//                    )
+//                }
             }
 
             EpubLayout.FIXED -> {
@@ -451,7 +461,62 @@ public class EpubNavigatorFragment internal constructor(
 
         parent.addView(resourcePager)
 
-        resetResourcePagerAdapter()
+        val htmlList = mutableListOf<String>()
+        var html: String? = null
+        val job = lifecycleScope.launch {
+            if (publication.metadata.presentation.layout == EpubLayout.REFLOWABLE && settings.value.scroll) {
+                for (link in publication.readingOrder) {
+                    val resource = publication.get(link)
+                    val html = resource?.read()?.getOrNull()
+                        ?.toString(link.mediaType?.charset ?: Charsets.UTF_8)?.trim()
+                    resource?.close()
+                    html?.let {
+                        htmlList.add(it)
+                    }
+                }
+                if (htmlList.size > 1) {
+//                    val doc: Document = Jsoup.parse(
+//                        """
+//                            <html>
+//                            <head>
+//                              <meta charset="utf-8">
+//                              <style>img{max-width:100%;height:auto;}</style>
+//                            </head>
+//                            <body></body>
+//                            </html>
+//                        """.trimIndent()
+//                    )
+
+                    val doc = Jsoup.parse(htmlList[0])
+                    doc.body().empty()
+
+                    val body = doc.body()
+                    val head = doc.head()
+
+                    val headResourceSignatures = HashSet<String>()
+
+                    htmlList.forEachIndexed { index, html ->
+                        val div = Element("div").attr("id", "kidari_epub_page${index + 1}")
+
+                        val each: Document = Jsoup.parse(
+                            html.trimIndent()
+                        )
+
+                        div.html(each.body().html())
+                        body.appendChild(div)
+                    }
+                    doc.outputSettings().syntax(Document.OutputSettings.Syntax.xml)
+                    html = doc.outerHtml()
+                } else {
+//                    html = htmlList[0]
+                }
+            }
+        }
+
+        job.invokeOnCompletion {
+            viewModel.combineHtml = html
+            resetResourcePagerAdapter(html)
+        }
     }
 
     private inner class PageChangeListener : ViewPager.SimpleOnPageChangeListener() {
@@ -481,10 +546,10 @@ public class EpubNavigatorFragment internal constructor(
         }
     }
 
-    private fun resetResourcePagerAdapter() {
+    private fun resetResourcePagerAdapter(combineHtml: String? = null) {
         adapter = when (publication.metadata.presentation.layout) {
             EpubLayout.REFLOWABLE, null -> {
-                R2PagerAdapter(childFragmentManager, resourcesSingle)
+                R2PagerAdapter(childFragmentManager, resourcesSingle, combineHtml)
             }
             EpubLayout.FIXED -> {
                 when (viewModel.dualPageMode) {

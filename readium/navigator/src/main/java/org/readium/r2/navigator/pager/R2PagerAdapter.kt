@@ -19,12 +19,16 @@ import androidx.fragment.app.FragmentManager
 import org.readium.r2.navigator.extensions.let
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.AbsoluteUrl
 import org.readium.r2.shared.util.Url
+import org.readium.r2.shared.util.data.readOrElse
+import timber.log.Timber
 
 internal class R2PagerAdapter internal constructor(
     val fm: FragmentManager,
     private val resources: List<PageResource>,
+    val combineHtml: String? = null
 ) : R2FragmentPagerAdapter(fm) {
 
     internal interface Listener {
@@ -76,12 +80,22 @@ internal class R2PagerAdapter internal constructor(
         val locator = popPendingLocatorAt(getItemId(position))
         val fragment = when (val resource = resources[position]) {
             is PageResource.EpubReflowable -> {
-                R2EpubPageFragment.newInstance(
-                    resource.url,
-                    resource.link,
-                    initialLocator = locator,
-                    positionCount = resource.positionCount
-                )
+                if (combineHtml != null) {
+                     R2EpubPageFragment.newInstance(
+                        resource.url,
+                        resource.link,
+                        initialLocator = locator,
+                        positionCount = resource.positionCount,
+                        combineHtml = combineHtml
+                    )
+                } else {
+                    R2EpubPageFragment.newInstance(
+                        resource.url,
+                        resource.link,
+                        initialLocator = locator,
+                        positionCount = resource.positionCount
+                    )
+                }
             }
             is PageResource.EpubFxl -> {
                 R2FXLPageFragment.newInstance(
@@ -107,7 +121,7 @@ internal class R2PagerAdapter internal constructor(
     }
 
     override fun getCount(): Int {
-        return resources.size
+        return if (combineHtml != null) 1 else resources.size
     }
 
     override fun restoreState(state: Parcelable?, loader: ClassLoader?) {

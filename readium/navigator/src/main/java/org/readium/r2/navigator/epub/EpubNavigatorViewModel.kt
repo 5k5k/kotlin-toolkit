@@ -60,6 +60,8 @@ internal class EpubNavigatorViewModel(
     // the navigator.
     private val decorationTemplates: HtmlDecorationTemplates = config.decorationTemplates.copy()
 
+    var combineHtml: String? = null
+
     data class RunScriptCommand(val script: String, val scope: Scope) {
         sealed class Scope {
             object CurrentResource : Scope()
@@ -222,7 +224,7 @@ internal class EpubNavigatorViewModel(
     }
 
     fun shouldInterceptRequest(request: WebResourceRequest, isLandscape: Boolean = false, doubleLeft: Boolean? = null): WebResourceResponse? =
-        server.shouldInterceptRequest(request, css.value, isLandscape, doubleLeft)
+        server.shouldInterceptRequest(request, css.value, isLandscape, doubleLeft, combineHtml)
 
     fun submitPreferences(preferences: EpubPreferences) = viewModelScope.launch {
         val oldSettings = settings.value

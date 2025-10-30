@@ -59,6 +59,9 @@ internal class R2EpubPageFragment : Fragment() {
     internal val link: Link?
         get() = BundleCompat.getParcelable(requireArguments(), "link", Link::class.java)
 
+    private val combineHtml: String?
+        get() = requireArguments().getString("combineHtml")
+
     private var pendingLocator: Locator? = null
 
     private val positionCount: Long
@@ -239,10 +242,21 @@ internal class R2EpubPageFragment : Fragment() {
             false
         }
 
-        resourceUrl?.let {
-            isLoading = true
-            _isLoaded.value = false
-            webView.loadUrl(it.toString())
+        if (combineHtml == null) {
+            resourceUrl?.let {
+                isLoading = true
+                _isLoaded.value = false
+                webView.loadUrl(it.toString())
+            }
+        } else {
+            resourceUrl?.let { url ->
+                isLoading = true
+                _isLoaded.value = false
+                combineHtml?.let {
+                    webView.loadUrl(url.toString())
+//                    webView.loadDataWithBaseURL("https://readium/publication/", it, "text/html", "UTF-8", null)
+                }
+            }
         }
 
         setupPadding()
@@ -493,6 +507,7 @@ internal class R2EpubPageFragment : Fragment() {
             url: AbsoluteUrl,
             link: Link? = null,
             initialLocator: Locator? = null,
+            combineHtml: String? = null,
             positionCount: Int = 0,
         ): R2EpubPageFragment =
             R2EpubPageFragment().apply {
@@ -501,6 +516,7 @@ internal class R2EpubPageFragment : Fragment() {
                     putParcelable("link", link)
                     putParcelable("initialLocator", initialLocator)
                     putLong("positionCount", positionCount.toLong())
+                    putString("combineHtml", combineHtml)
                 }
             }
     }
