@@ -43,6 +43,7 @@ internal data class PackageDocument(
                 epubVersion = epubVersion,
                 uniqueIdentifierId = document.getAttr("unique-identifier"),
                 metadata = metadata,
+                // item list
                 manifest = manifestElement.get("item", Namespaces.OPF)
                     .mapNotNull { Item.parse(it, filePath, prefixMap) },
                 spine = Spine.parse(spineElement, prefixMap, epubVersion),

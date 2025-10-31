@@ -52,6 +52,7 @@ internal object NavigationDocumentParser {
                 DEFAULT_VOCAB.TYPE
             )
         }
+        //links come from here
         val links = nav.getFirst("ol", Namespaces.XHTML)?.let { parseOlElement(it, filePath, prefixMap) }
         return if (types.isNotEmpty() && !links.isNullOrEmpty()) Pair(types, links) else null
     }
@@ -100,6 +101,7 @@ internal object NavigationDocumentParser {
         return if (children.isEmpty() && (href.toString() == "#" || title == "")) {
             null
         } else {
+            //links come from here
             Link(
                 title = title,
                 href = href,
