@@ -30,7 +30,7 @@
             preserveAspectRatio: xMidYMid meet !important;
         }
 
-        svg image {
+        svg image, img {
             width: 100% !important;
             height: 100% !important;
             object-fit: contain !important;

@@ -2,8 +2,15 @@
       const svg = document.querySelector('svg');
     if (svg) {
         svg.setAttribute('preserveAspectRatio', 'xMaxYMid meet');
-        return
     }
+     const img = document.querySelector('img');
+     if (img) {
+         img.style.objectFit = 'contain';
+         img.style.objectPosition = 'right center';
+         img.style.width = '100%';
+         img.style.height = 'auto';
+     }
+     if (svg || img) return;
     if (attempt < maxAttempts) {
         setTimeout(() => retry(maxAttempts, attempt + 1), 1);
     }
