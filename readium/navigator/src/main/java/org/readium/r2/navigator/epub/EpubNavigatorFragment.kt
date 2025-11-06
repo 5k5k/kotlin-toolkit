@@ -680,6 +680,7 @@ public class EpubNavigatorFragment internal constructor(
                     (fragment as? R2EpubPageFragment)
                         ?.takeIf { it.isLoaded.value }
                         ?.runJavaScript(command.script)
+                    notifyCurrentLocation()
                 }
             }
             is RunScriptCommand.Scope.LoadedResource -> {
@@ -789,6 +790,18 @@ public class EpubNavigatorFragment internal constructor(
         }
 
         override fun onPageLoaded(webView: R2BasicWebView, link: Link) {
+
+//            val js = """
+//                (function() {
+//                    return document.documentElement.scrollHeight / window.innerHeight;
+//                })();
+//            """.trimIndent()
+//            var totalScreens = 0.0
+//            webView.evaluateJavascript(js) { result ->
+//                totalScreens = result.toDoubleOrNull() ?: 0.0
+//                Timber.d("totalScreens: $totalScreens")
+//                paginationListener?.onPageLoaded()
+//            }
             paginationListener?.onPageLoaded()
 
             val href = link.url()
@@ -1075,7 +1088,7 @@ public class EpubNavigatorFragment internal constructor(
 
         debounceLocationNotificationJob?.cancel()
         debounceLocationNotificationJob = viewLifecycleOwner.lifecycleScope.launch {
-            delay(100L)
+            delay(20L)
 
             // We don't want to notify the current location if the navigator is still loading a
             // locator, to avoid notifying intermediate locations.
