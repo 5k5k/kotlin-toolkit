@@ -241,15 +241,15 @@ body {
     background-color: var(--USER__backgroundColor) !important
 }
 
-:root[style*="--USER__backgroundColor"] * :not(.ktbg,.ktbg *){
-    background-color: transparent !important
+:root[style*="--USER__backgroundColor"] body {
+    background-color: var(--USER__backgroundColor) !important
 }
 
 :root[style*="--USER__textColor"] {
     color: var(--USER__textColor) !important
 }
 
-:root[style*="--USER__textColor"] :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(pre):not(.ktbg):not(.ktbg *) {
+:root[style*="--USER__textColor"] *:not(.has-color):not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(pre) {
     color: inherit !important
 }
 

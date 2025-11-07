@@ -95,15 +95,38 @@ internal data class ReadiumCss(
                     )
                 }
 
+//                add(
+//                    """
+//                    <style type="text/css">
+//                    :root[style*="--USER__textColor"] .kakao {
+//                        color: #000000 !important
+//                    }
+//                    </style>
+//                        """.trimIndent()
+//                )
+
                 add(
                     """
-                    <style type="text/css">
-                    :root[style*="--USER__textColor"] .kakao {
-                        color: #000000 !important
-                    }
-                    </style>
-                        """.trimIndent()
+                    <script>
+                    (function markColoredElements() {
+                        try {
+                            const bodyColor = getComputedStyle(document.body).color;
+                            const elements = document.querySelectorAll('*');
+                            elements.forEach(el => {
+                                const color = getComputedStyle(el).color;
+                                // 如果与 body 的颜色不同，则视为自定义颜色
+                                if (color !== bodyColor) {
+                                    el.classList.add('has-color');
+                                }
+                            });
+                        } catch (e) {
+                            console.error('markColoredElements error:', e);
+                        }
+                    })();
+                    </script>
+                    """.trimIndent()
                 )
+
             }.joinToString("\n") + "\n"
         )
     }
@@ -193,7 +216,7 @@ internal data class ReadiumCss(
         content.insert(index, " style=\"$css\"")
     }
 
-    fun injectBackground(mapString: String, html: String): String  {
+    fun injectBackground(mapString: String, html: String): String {
         val content = StringBuilder(html)
         val css = mapString.replace("\"", "&quot;")
         val index = content.indexForTagAttributes("html")
