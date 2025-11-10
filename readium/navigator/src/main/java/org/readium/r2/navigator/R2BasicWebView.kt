@@ -64,6 +64,7 @@ internal open class R2BasicWebView(context: Context, attrs: AttributeSet) : WebV
         fun onPageLoaded(webView: R2BasicWebView, link: Link) {}
         fun onPageChanged(pageIndex: Int, totalPages: Int, url: String) {}
         fun onPageEnded(end: Boolean) {}
+        fun onPageHorizontalEnd() {}
         fun onTap(point: PointF): Boolean = false
         fun onDragStart(event: DragEvent): Boolean = false
         fun onDragMove(event: DragEvent): Boolean = false

@@ -270,6 +270,10 @@ public class EpubNavigatorFragment internal constructor(
     public interface PaginationListener {
         public fun onPageChanged(pageIndex: Int, totalPages: Int, locator: Locator) {}
         public fun onPageLoaded() {}
+        public fun onPageEnd(end: Boolean){}
+        public fun onPageHorizontalEnd(){}
+        public fun onForwardEvent(lastDouble: Boolean){}
+        public fun onBackwardEvent(){}
     }
 
     public interface Listener : OverflowableNavigator.Listener, HyperlinkNavigator.Listener
@@ -416,6 +420,7 @@ public class EpubNavigatorFragment internal constructor(
 
                 this.resourcesSingle = resourcesSingle
                 this.resourcesDouble = resourcesDouble
+                lastDouble = lastPageDouble()
             }
         }
 
@@ -821,6 +826,16 @@ public class EpubNavigatorFragment internal constructor(
         override fun onTap(point: PointF): Boolean =
             inputListener.onTap(TapEvent(point))
 
+        override fun onPageEnded(end: Boolean) {
+            super.onPageEnded(end)
+            paginationListener?.onPageEnd(end)
+        }
+
+        override fun onPageHorizontalEnd() {
+            super.onPageHorizontalEnd()
+            paginationListener?.onPageHorizontalEnd()
+        }
+
         override fun onDragStart(event: R2BasicWebView.DragEvent): Boolean =
             onDrag(DragEvent.Type.Start, event)
 
@@ -902,6 +917,7 @@ public class EpubNavigatorFragment internal constructor(
     }
 
     override fun goForward(animated: Boolean): Boolean {
+        paginationListener?.onForwardEvent(lastDouble)
         if (publication.metadata.presentation.layout == EpubLayout.FIXED) {
             return goToNextResource(jump = false, animated = animated)
         }
@@ -919,6 +935,7 @@ public class EpubNavigatorFragment internal constructor(
     }
 
     override fun goBackward(animated: Boolean): Boolean {
+        paginationListener?.onBackwardEvent()
         if (publication.metadata.presentation.layout == EpubLayout.FIXED) {
             return goToPreviousResource(jump = false, animated = animated)
         }
@@ -938,7 +955,7 @@ public class EpubNavigatorFragment internal constructor(
     private fun goToNextResource(jump: Boolean, animated: Boolean): Boolean {
         val adapter = resourcePager.adapter ?: return false
         if (resourcePager.currentItem >= adapter.count - 1) {
-            return false
+            return true
         }
 
         if (jump) {
@@ -960,7 +977,7 @@ public class EpubNavigatorFragment internal constructor(
 
     private fun goToPreviousResource(jump: Boolean, animated: Boolean): Boolean {
         if (resourcePager.currentItem <= 0) {
-            return false
+            return true
         }
 
         if (jump) {
@@ -1138,6 +1155,20 @@ public class EpubNavigatorFragment internal constructor(
                     locator = currentLocator
                 )
             }
+        }
+    }
+
+    public var lastDouble: Boolean = false
+
+    public fun lastPageDouble(): Boolean {
+        if (resourcesDouble.isEmpty()) {
+            return false
+        }
+        val last = resourcesDouble.last()
+        return if (last is PageResource.EpubFxl) {
+            !(last.leftUrl == null || last.rightUrl == null)
+        } else {
+            false
         }
     }
 

@@ -74,6 +74,10 @@ internal class R2WebView(context: Context, attrs: AttributeSet) : R2BasicWebView
         return this.computeVerticalScrollRange() // working after load of page
     }
 
+    fun getContentWidth(): Int {
+        return this.computeHorizontalScrollRange()
+    }
+
     internal class ItemInfo {
         var position: Int = 0
         var widthFactor: Float = 0.toFloat()
@@ -164,6 +168,9 @@ internal class R2WebView(context: Context, attrs: AttributeSet) : R2BasicWebView
 
     private var mCalledSuper: Boolean = false
     private var mDecorChildCount: Int = 0
+
+    var clearToEnd = false
+    var clearXToEnd = false
 
     /**
      * Indicates that the pager is in an idle, settled state. The current page
@@ -726,6 +733,8 @@ internal class R2WebView(context: Context, attrs: AttributeSet) : R2BasicWebView
                     if (xDiff > mTouchSlop) {
                         if (DEBUG) Timber.v("Starting drag!")
                         mIsBeingDragged = true
+                        clearToEnd = false
+                        clearXToEnd = false
                         mLastMotionX = if (x - mInitialMotionX > 0) {
                             mInitialMotionX + mTouchSlop
                         } else {
@@ -737,9 +746,11 @@ internal class R2WebView(context: Context, attrs: AttributeSet) : R2BasicWebView
             }
             MotionEvent.ACTION_UP -> when {
                 mIsBeingDragged -> {
+                    if (DEBUG) Timber.v("ACTION_UP!")
                     mIsBeingDragged = false
                     mHasAbortedScroller = false
-
+                    clearToEnd = true
+                    clearXToEnd = true
                     val activePointerIndex = ev.findPointerIndex(mActivePointerId)
                     val x = ev.safeGetX(activePointerIndex)
                     val y = ev.safeGetY(activePointerIndex)
@@ -792,6 +803,7 @@ internal class R2WebView(context: Context, attrs: AttributeSet) : R2BasicWebView
             }
 
             MotionEvent.ACTION_CANCEL -> if (mIsBeingDragged) {
+                if (DEBUG) Timber.v("ACTION_CANCEL!")
                 mIsBeingDragged = false
                 scrollToItem(mCurItem, true, 0, false)
             }

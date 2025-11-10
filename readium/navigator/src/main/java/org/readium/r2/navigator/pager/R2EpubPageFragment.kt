@@ -15,7 +15,12 @@ import android.annotation.SuppressLint
 import android.graphics.PointF
 import android.os.Bundle
 import android.util.DisplayMetrics
-import android.view.*
+import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -34,7 +39,11 @@ import androidx.webkit.WebViewFeature
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.readium.r2.navigator.R
 import org.readium.r2.navigator.R2BasicWebView
@@ -49,6 +58,7 @@ import org.readium.r2.shared.InternalReadiumApi
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.AbsoluteUrl
+import timber.log.Timber
 
 @OptIn(ExperimentalReadiumApi::class)
 internal class R2EpubPageFragment : Fragment() {
@@ -175,6 +185,7 @@ internal class R2EpubPageFragment : Fragment() {
         webView.addJavascriptInterface(webView, "Android")
 
         var endReached = false
+        var endXReached = false
         webView.setOnOverScrolledCallback(object : R2BasicWebView.OnOverScrolledCallback {
             override fun onOverScrolled(
                 scrollX: Int,
@@ -183,23 +194,47 @@ internal class R2EpubPageFragment : Fragment() {
                 clampedY: Boolean,
             ) {
                 activity ?: return
-                val metrics = DisplayMetrics()
 
-                val topDecile = webView.contentHeight - 1.15 * metrics.heightPixels
-                val bottomDecile = (webView.contentHeight - metrics.heightPixels).toDouble()
+                val line = webView.contentHeight - webView.height
+                val lineX = webView.getContentWidth() - webView.width
 
-                when (scrollY.toDouble()) {
-                    in topDecile..bottomDecile -> {
-                        if (!endReached) {
-                            endReached = true
-                            webView.listener?.onPageEnded(endReached)
-                        }
+//                Timber.d("yyy scrollY ${scrollY}")
+//                Timber.d("yyy line ${line}")
+//                Timber.d("yyy webView.height ${webView.height}")
+//
+//                Timber.d("xxx scrollX ${scrollX}")
+//                Timber.d("xxx webView.width ${webView.width}")
+//                Timber.d("xxx getContentWidth.width ${webView.getContentWidth()}")
+//                Timber.d("xxx lineX ${lineX}")
+
+                if (scrollY >= line) {
+                    if (webView.clearToEnd) {
+                        endReached = false
+                        webView.clearToEnd = false
                     }
-                    else -> {
-                        if (endReached) {
-                            endReached = false
-                            webView.listener?.onPageEnded(endReached)
-                        }
+                    if (!endReached) {
+                        endReached = true
+                        webView.listener?.onPageEnded(endReached)
+                    }
+                } else {
+                    if (endReached) {
+                        endReached = false
+                        webView.listener?.onPageEnded(endReached)
+                    }
+                }
+
+                if (scrollX >= lineX) {
+                    if (webView.clearXToEnd) {
+                        endXReached = false
+                        webView.clearXToEnd = false
+                    }
+                    if (!endXReached) {
+                        endXReached = true
+                        webView.listener?.onPageHorizontalEnd()
+                    }
+                } else {
+                    if (endXReached) {
+                        endXReached = false
                     }
                 }
             }
