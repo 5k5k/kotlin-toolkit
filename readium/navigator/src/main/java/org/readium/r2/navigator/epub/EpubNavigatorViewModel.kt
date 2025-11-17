@@ -104,7 +104,7 @@ internal class EpubNavigatorViewModel(
             )
         }
 
-    private val css = MutableStateFlow(
+    val css = MutableStateFlow(
         ReadiumCss(
             rsProperties = config.readiumCssRsProperties,
             fontFamilyDeclarations = config.fontFamilyDeclarations,

@@ -20,22 +20,27 @@ import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
-import android.widget.RelativeLayout
 import androidx.core.os.BundleCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.webkit.WebViewClientCompat
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 import org.readium.r2.navigator.R2BasicWebView
 import org.readium.r2.navigator.databinding.ReadiumNavigatorFragmentFxllayoutDoubleBinding
 import org.readium.r2.navigator.databinding.ReadiumNavigatorFragmentFxllayoutDoubleLandscapeBinding
-import org.readium.r2.navigator.databinding.ReadiumNavigatorFragmentFxllayoutSingleLandscapeBinding
 import org.readium.r2.navigator.databinding.ReadiumNavigatorFragmentFxllayoutSingleBinding
+import org.readium.r2.navigator.databinding.ReadiumNavigatorFragmentFxllayoutSingleLandscapeBinding
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubNavigatorViewModel
 import org.readium.r2.navigator.epub.fxl.R2FXLLayout
 import org.readium.r2.navigator.epub.fxl.R2FXLOnDoubleTapListener
+import org.readium.r2.navigator.preferences.ReadingProgression
+import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Link
+import org.readium.r2.shared.util.AbsoluteUrl
 import org.readium.r2.shared.util.Url
+import org.readium.r2.shared.util.mediatype.MediaType
 
 @Suppress("DEPRECATION")
 internal class R2FXLPageFragment : Fragment() {
@@ -103,7 +108,7 @@ internal class R2FXLPageFragment : Fragment() {
 
                 val webview = if (landscape) singleLandscapeBinding.webViewSingle else singleBinding.webViewSingle
 
-                setupWebView(webview, secondResourceLink, secondResourceUrl)
+                setupWebView(webview, secondResourceLink, secondResourceUrl, null, landscape)
 
                 r2FXLLayout.addOnDoubleTapListener(R2FXLOnDoubleTapListener(true))
                 r2FXLLayout.addOnTapListener(object : R2FXLLayout.OnTapListener {
@@ -138,8 +143,8 @@ internal class R2FXLPageFragment : Fragment() {
                 val left = if (landscape) doubleLandscapeBinding.firstWebView else doubleBinding.firstWebView
                 val right = if (landscape) doubleLandscapeBinding.secondWebView else doubleBinding.secondWebView
 
-                setupWebView(left, firstResourceLink, firstResourceUrl, true)
-                setupWebView(right, secondResourceLink, secondResourceUrl, false)
+                setupWebView(left, firstResourceLink, firstResourceUrl, true, landscape)
+                setupWebView(right, secondResourceLink, secondResourceUrl, false, landscape)
 
                 r2FXLLayout.addOnDoubleTapListener(R2FXLOnDoubleTapListener(true))
                 r2FXLLayout.addOnTapListener(object : R2FXLLayout.OnTapListener {
@@ -174,7 +179,7 @@ internal class R2FXLPageFragment : Fragment() {
 
             val webview = if (landscape) singleLandscapeBinding.webViewSingle else singleBinding.webViewSingle
 
-            setupWebView(webview, firstResourceLink, firstResourceUrl)
+            setupWebView(webview, firstResourceLink, firstResourceUrl, null, landscape)
 
             r2FXLLayout.addOnDoubleTapListener(R2FXLOnDoubleTapListener(true))
             r2FXLLayout.addOnTapListener(object : R2FXLLayout.OnTapListener {
@@ -222,8 +227,12 @@ internal class R2FXLPageFragment : Fragment() {
         return 0
     }
 
+    val assetsBaseHref = AbsoluteUrl("https://readium/assets/")!!
+    val publicationBaseHref = AbsoluteUrl("https://readium/publication/")!!
+
+    @OptIn(ExperimentalReadiumApi::class)
     @SuppressLint("SetJavaScriptEnabled")
-    private fun setupWebView(webView: R2BasicWebView, link: Link?, resourceUrl: Url?, doubleLeft: Boolean? = null) {
+    private fun setupWebView(webView: R2BasicWebView, link: Link?, resourceUrl: Url?, doubleLeft: Boolean? = null, landscape: Boolean = false) {
         webViews.add(webView)
         navigator?.let {
             webView.listener = it.webViewListener
@@ -270,8 +279,112 @@ internal class R2FXLPageFragment : Fragment() {
             true
         }
 
-        resourceUrl?.let { webView.loadUrl(it.toString()) }
+        resourceUrl?.let {
+            if (link?.mediaType?:false == MediaType.SVG) {
+                viewModel.css.value.userProperties.backgroundColor?.toCss()?.let {
+                    cssColor ->
+                    val color = cssRgbToAndroidInt(cssColor)
+                    webView.setBackgroundColor(color)
+                }
+            }
+            if ((link?.mediaType?.isBitmap ?: false) && isLandscape()) { //|| link?.mediaType?:false == MediaType.SVG
+                var justify = "justify-content: center; "
+                doubleLeft?.let { doubleLeft ->
+                    justify = if (viewModel.css.value.layout.readingProgression == ReadingProgression.LTR) {
+                        if (!doubleLeft) {
+                            "justify-content: flex-start; "
+                        } else {
+                            "justify-content: flex-end; "
+                        }
+                    } else {
+                        if (doubleLeft) {
+                            "justify-content: flex-start; "
+                        } else {
+                            "justify-content: flex-end; "
+                        }
+                    }
+                }
+                var html = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title></title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+     html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
     }
+    body {
+        display: flex;""" +
+                    justify +
+                    """
+    }
+    img {
+        width: auto;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+    }
+</style>
+</head>
+<body>
+<img src="${resourceUrl}"/>
+</body>
+</html>
+                        """.trimIndent()
+
+                val injectables = mutableListOf<String>()
+                injectables.add(
+                    """
+                            <style>
+                                :root[style*="--USER__backgroundColor"] {
+                                    background-color: var(--USER__backgroundColor) !important
+                                }
+                            </style>
+                        """
+                )
+                injectables.add(
+                    script(assetsBaseHref.resolve(Url("readium/scripts/readium-fixed.js")!!))
+                )
+                val headEndIndex = html.indexOf("</head>", 0, true)
+                if (headEndIndex != -1) {
+                    html = StringBuilder(html)
+                        .insert(headEndIndex, "\n" + injectables.joinToString("\n") + "\n")
+                        .toString()
+                }
+                webView.loadDataWithBaseURL(publicationBaseHref.toString(), html, "text/html", "UTF-8", null)
+            } else {
+                webView.loadUrl(it.toString())
+            }
+        }
+    }
+
+    fun cssRgbToAndroidInt(cssRgb: String, defaultValue: Int = 0x00000000): Int {
+        val pattern = Pattern.compile("rgb\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\)")
+        val matcher: Matcher = pattern.matcher(cssRgb)
+
+        if (!matcher.matches()) {
+            return defaultValue
+        }
+
+        try {
+            val red = matcher.group(1)!!.toInt().coerceIn(0, 255)
+            val green = matcher.group(2)!!.toInt().coerceIn(0, 255)
+            val blue = matcher.group(3)!!.toInt().coerceIn(0, 255)
+
+            return 0xFF000000.toInt() or (red shl 16) or (green shl 8) or blue
+        } catch (e: Exception) {
+            return defaultValue
+        }
+    }
+
+    private fun script(src: Url): String =
+        """<script type="text/javascript" src="$src"></script>"""
 
     companion object {
 

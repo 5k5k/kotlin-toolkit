@@ -38,8 +38,30 @@ internal fun Resource.injectHtml(
     doubleLeft: Boolean? = null
 ): Resource =
     TransformingResource(this) { bytes ->
-        if (!mediaType.isHtml) {
+        if (!mediaType.isHtml && mediaType != MediaType.SVG) {
             return@TransformingResource Try.success(bytes)
+        }
+
+        if (mediaType == MediaType.SVG) {
+            var svgContent = bytes.toString(mediaType.charset ?: Charsets.UTF_8).trim()
+            var content = svgContent
+            if (!isLandscape) {
+                var fixedSvg = content
+                fixedSvg = fixedSvg.replace("""<\?xml[^>]*>""".toRegex(), "")
+                content = """
+            <html>
+            <head>
+            <meta charset="UTF-8"/>
+            <title></title>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+            </head>
+            <body>
+                $fixedSvg
+            </body>
+            </html>
+        """.trimIndent()
+            }
+            return@TransformingResource  Try.success(content.toByteArray())
         }
 
         var content = bytes.toString(mediaType.charset ?: Charsets.UTF_8).trim()
@@ -52,6 +74,10 @@ internal fun Resource.injectHtml(
                         """
                             <style>
                                 :root[style*="--USER__backgroundColor"] {
+                                    background-color: var(--USER__backgroundColor) !important
+                                }
+                                
+                                :root[style*="--USER__backgroundColor"] *{
                                     background-color: var(--USER__backgroundColor) !important
                                 }
                             </style>

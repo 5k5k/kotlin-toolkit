@@ -49,7 +49,7 @@ import org.readium.r2.shared.util.mediatype.MediaType
 @Parcelize
 public data class Link(
     val href: Href,
-    val mediaType: MediaType? = null,
+    var mediaType: MediaType? = null,
     val title: String? = null,
     val rels: Set<String> = setOf(),
     val properties: Properties = Properties(),

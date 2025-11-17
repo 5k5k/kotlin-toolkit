@@ -28,6 +28,7 @@ import org.readium.r2.shared.util.data.ReadError
 import org.readium.r2.shared.util.data.asInputStream
 import org.readium.r2.shared.util.http.HttpHeaders
 import org.readium.r2.shared.util.http.HttpRange
+import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.shared.util.resource.Resource
 import org.readium.r2.shared.util.resource.StringResource
 import org.readium.r2.shared.util.resource.fallback
@@ -71,7 +72,8 @@ internal class WebViewServer(
                     range = HttpHeaders(request.requestHeaders).range,
                     css = css,
                     isLandscape,
-                    doubleLeft
+                    doubleLeft,
+                    request.isForMainFrame
                 )
             }
             path.startsWith("/assets/") && isServedAsset(path.removePrefix("/assets/")) -> {
@@ -86,7 +88,7 @@ internal class WebViewServer(
      *
      * If the [Resource] is an HTML document, injects the required JavaScript and CSS files.
      */
-    private fun servePublicationResource(href: Url, range: HttpRange?, css: ReadiumCss, isLandscape: Boolean = false, doubleLeft: Boolean? = null): WebResourceResponse {
+    private fun servePublicationResource(href: Url, range: HttpRange?, css: ReadiumCss, isLandscape: Boolean = false, doubleLeft: Boolean? = null, isMain: Boolean = true): WebResourceResponse {
         val link = publication.linkWithHref(href)
             // Query parameters must be kept as they might be relevant for the fetcher.
             ?.copy(href = Href(href))
@@ -109,7 +111,7 @@ internal class WebViewServer(
         }
 
         link.mediaType
-            ?.takeIf { it.isHtml }
+            ?.takeIf { it.isHtml || (it == MediaType.SVG && isMain)}
             ?.let {
                 resource = resource.injectHtml(
                     publication,
@@ -121,6 +123,10 @@ internal class WebViewServer(
                     doubleLeft
                 )
             }
+
+        if (link.mediaType == MediaType.SVG && !isLandscape && isMain) {
+            link.mediaType = MediaType.XHTML
+        }
 
         val headers = mutableMapOf(
             "Accept-Ranges" to "bytes"
