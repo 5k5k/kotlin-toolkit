@@ -58,7 +58,7 @@ internal class WebViewServer(
      * https://readium/publication/ serves the publication resources through its fetcher.
      * https://readium/assets/ serves the application assets.
      */
-    fun shouldInterceptRequest(request: WebResourceRequest, css: ReadiumCss, isLandscape: Boolean = false, doubleLeft: Boolean? = null): WebResourceResponse? {
+    fun shouldInterceptRequest(request: WebResourceRequest, css: ReadiumCss, isLandscape: Boolean = false, doubleLeft: Boolean? = null,     topMargin: Int = 0, bottomMargin: Int = 0): WebResourceResponse? {
         if (request.url.host != "readium") return null
         val path = request.url.path ?: return null
 
@@ -73,7 +73,9 @@ internal class WebViewServer(
                     css = css,
                     isLandscape,
                     doubleLeft,
-                    request.isForMainFrame
+                    request.isForMainFrame,
+                    topMargin,
+                    bottomMargin
                 )
             }
             path.startsWith("/assets/") && isServedAsset(path.removePrefix("/assets/")) -> {
@@ -88,7 +90,8 @@ internal class WebViewServer(
      *
      * If the [Resource] is an HTML document, injects the required JavaScript and CSS files.
      */
-    private fun servePublicationResource(href: Url, range: HttpRange?, css: ReadiumCss, isLandscape: Boolean = false, doubleLeft: Boolean? = null, isMain: Boolean = true): WebResourceResponse {
+    private fun servePublicationResource(href: Url, range: HttpRange?, css: ReadiumCss, isLandscape: Boolean = false, doubleLeft: Boolean? = null, isMain: Boolean = true,     topMargin: Int = 0,
+                                         bottomMargin: Int = 0): WebResourceResponse {
         val link = publication.linkWithHref(href)
             // Query parameters must be kept as they might be relevant for the fetcher.
             ?.copy(href = Href(href))
@@ -120,7 +123,9 @@ internal class WebViewServer(
                     baseHref = assetsBaseHref,
                     disableSelectionWhenProtected = disableSelectionWhenProtected,
                     isLandscape,
-                    doubleLeft
+                    doubleLeft,
+                    topMargin,
+                    bottomMargin
                 )
             }
 

@@ -35,7 +35,9 @@ internal fun Resource.injectHtml(
     baseHref: AbsoluteUrl,
     disableSelectionWhenProtected: Boolean,
     isLandscape: Boolean = false,
-    doubleLeft: Boolean? = null
+    doubleLeft: Boolean? = null,
+    topMargin: Int = 0,
+    bottomMargin: Int = 0
 ): Resource =
     TransformingResource(this) { bytes ->
         if (!mediaType.isHtml && mediaType != MediaType.SVG) {
@@ -123,10 +125,29 @@ internal fun Resource.injectHtml(
                 return@TransformingResource Try.failure(ReadError.Decoding(e))
             }
 
+            content = try {
+                insertBodyPadding(content, topMargin, bottomMargin)
+            } catch (e: Exception) {
+                return@TransformingResource Try.failure(ReadError.Decoding(e))
+            }
+
             injectables.add(
                 script(
                     baseHref.resolve(Url("readium/scripts/readium-reflowable.js")!!)
                 )
+            )
+
+            injectables.add(
+                """
+                <style>
+                    @media (orientation: landscape) {
+                        img {
+                            max-height: calc(100vh - """ + (topMargin + bottomMargin) + """px) !important;
+                            width: auto !important;
+                        }
+                    }
+                </style>
+            """
             )
         }
 
@@ -156,6 +177,25 @@ internal fun Resource.injectHtml(
 
         Try.success(content.toByteArray())
     }
+
+private fun insertBodyPadding(html: String, topMargin: Int, bottomMargin: Int): String {
+    val top = """<div style="height:""" + topMargin + """px;"></div>"""
+    val bottom = """<div style="height:""" + bottomMargin + """px;"></div>"""
+
+    var result = html
+
+    result = result.replaceFirst(
+        Regex("<body([^>]*)>"),
+        "<body$1>$top"
+    )
+
+    result = result.replace(
+        "</body>",
+        "$bottom</body>"
+    )
+
+    return result
+}
 
 private fun script(src: Url): String =
     """<script type="text/javascript" src="$src"></script>"""
