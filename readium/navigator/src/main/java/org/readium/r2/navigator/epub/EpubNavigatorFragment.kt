@@ -269,7 +269,7 @@ public class EpubNavigatorFragment internal constructor(
 
     public interface PaginationListener {
         public fun onPageChanged(pageIndex: Int, totalPages: Int, locator: Locator) {}
-        public fun onPageLoaded() {}
+        public fun onPageLoaded(contentHeight:Int = 0 ,height:Int = 0) {}
         public fun onPageEnd(end: Boolean){}
         public fun onPageHorizontalEnd(){}
         public fun onForwardEvent(lastDouble: Boolean){}
@@ -796,18 +796,7 @@ public class EpubNavigatorFragment internal constructor(
 
         override fun onPageLoaded(webView: R2BasicWebView, link: Link) {
 
-//            val js = """
-//                (function() {
-//                    return document.documentElement.scrollHeight / window.innerHeight;
-//                })();
-//            """.trimIndent()
-//            var totalScreens = 0.0
-//            webView.evaluateJavascript(js) { result ->
-//                totalScreens = result.toDoubleOrNull() ?: 0.0
-//                Timber.d("totalScreens: $totalScreens")
-//                paginationListener?.onPageLoaded()
-//            }
-            paginationListener?.onPageLoaded()
+            paginationListener?.onPageLoaded(webView.contentHeight, webView.height)
 
             val href = link.url()
             if (state is State.Initializing || (state as? State.Loading)?.initialResourceHref?.isEquivalent(
