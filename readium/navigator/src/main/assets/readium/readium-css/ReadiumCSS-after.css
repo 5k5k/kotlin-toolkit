@@ -257,12 +257,12 @@ body {
     background-color: var(--USER__backgroundColor) !important
 }
 
-:root[style*="--USER__textColor"] {
-    color: var(--USER__textColor) !important
+:root[style*="--USER__textColor"] body :is(p, div, span, h1, h2, h3, h4, h5, h6):not([class]) {
+  color: var(--USER__textColor)
 }
 
-:root[style*="--USER__textColor"] *:not(.has-color):not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(pre) {
-    color: inherit !important
+:root[style*="--USER__textColor"] body :is(.title) {
+  color: var(--USER__textColor)
 }
 
 :root[style*=readium-advanced-on][style*="--USER__textAlign"] {
