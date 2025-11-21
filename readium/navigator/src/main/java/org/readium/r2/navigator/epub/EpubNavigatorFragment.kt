@@ -900,9 +900,20 @@ public class EpubNavigatorFragment internal constructor(
             if (activity is Activity) {
                 isLandscape = activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
             }
+            val topMargin =
+                if (!viewModel.settings.value.scroll) {// && isLandscape
+                    0
+                } else {
+                    (activity.getActionBarSizePx() / resources.displayMetrics.density).roundToInt()
+                }
 
-            val topMargin = (activity.getActionBarSizePx() / resources.displayMetrics.density).roundToInt()
-            val bottomMargin = 100
+            val bottomMargin =
+                if (!viewModel.settings.value.scroll) {// && isLandscape
+                    0
+                } else {
+                    100
+                }
+
             return viewModel.shouldInterceptRequest(request, isLandscape, doubleLeft, topMargin, bottomMargin)
         }
 
