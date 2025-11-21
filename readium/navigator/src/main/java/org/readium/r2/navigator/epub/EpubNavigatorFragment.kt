@@ -277,6 +277,7 @@ public class EpubNavigatorFragment internal constructor(
         public fun onPageHorizontalEnd(){}
         public fun onForwardEvent(lastDouble: Boolean){}
         public fun onBackwardEvent(){}
+        public fun onImagePageOverload(){}
     }
 
     public interface Listener : OverflowableNavigator.Listener, HyperlinkNavigator.Listener
@@ -452,6 +453,8 @@ public class EpubNavigatorFragment internal constructor(
             EpubLayout.REFLOWABLE, null -> R2ViewPager.PublicationType.EPUB
             EpubLayout.FIXED -> R2ViewPager.PublicationType.FXL // 点击滚动会被移除
         }
+        resourcePager.progression = settings.value.readingProgression
+        resourcePager.listener = paginationListener
         resourcePager.setBackgroundColor(viewModel.settings.value.effectiveBackgroundColor)
         // Let the page views handle the keyboard events.
         resourcePager.isFocusable = false
