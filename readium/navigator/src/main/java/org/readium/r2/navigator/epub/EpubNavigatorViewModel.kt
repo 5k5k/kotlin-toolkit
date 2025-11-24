@@ -221,8 +221,8 @@ internal class EpubNavigatorViewModel(
             ?.copy(href = Href(href))
     }
 
-    fun shouldInterceptRequest(request: WebResourceRequest, isLandscape: Boolean = false, doubleLeft: Boolean? = null): WebResourceResponse? =
-        server.shouldInterceptRequest(request, css.value, isLandscape, doubleLeft)
+    fun shouldInterceptRequest(request: WebResourceRequest, isLandscape: Boolean = false, doubleLeft: Boolean? = null,     topMargin: Int = 0, bottomMargin: Int = 0): WebResourceResponse? =
+        server.shouldInterceptRequest(request, css.value, isLandscape, doubleLeft, topMargin, bottomMargin)
 
     fun submitPreferences(preferences: EpubPreferences) = viewModelScope.launch {
         val oldSettings = settings.value

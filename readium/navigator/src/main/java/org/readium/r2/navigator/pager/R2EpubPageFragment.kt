@@ -12,9 +12,11 @@
 package org.readium.r2.navigator.pager
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.PointF
 import android.os.Bundle
 import android.util.DisplayMetrics
+import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -372,11 +374,30 @@ internal class R2EpubPageFragment : Fragment() {
         if (shouldApplyInsetsPadding) {
             // Update padding when the window insets change, for example when the navigation and status
             // bars are toggled.
-            ViewCompat.setOnApplyWindowInsetsListener(containerView) { _, insets ->
-                updatePadding()
-                insets
-            }
+//            ViewCompat.setOnApplyWindowInsetsListener(containerView) { _, insets ->
+//                updatePadding()
+//                insets
+//            }
+            containerView.context.getActionBarSizePx()
+            containerView.setPadding(0, containerView.context.getActionBarSizePx(), 0, containerView.context.dpToPx(100))
         }
+    }
+
+    fun Context.getActionBarSizePx(): Int {
+        val typedValue = TypedValue()
+        val attrs = intArrayOf(android.R.attr.actionBarSize)
+        val typedArray = obtainStyledAttributes(typedValue.data, attrs)
+        val size = typedArray.getDimensionPixelSize(0, -1)
+        typedArray.recycle()
+        return size
+    }
+
+    fun Context.dpToPx(dp: Int): Int {
+        return TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            dp.toFloat(),
+            resources.displayMetrics
+        ).toInt()
     }
 
     private fun updatePadding() {
@@ -388,19 +409,19 @@ internal class R2EpubPageFragment : Fragment() {
                 var top = 0
                 var bottom = 0
 
-                // Add additional padding to take into account the display cutout, if needed.
-                if (
-                    shouldApplyInsetsPadding &&
-                    android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P &&
-                    window.attributes.layoutInDisplayCutoutMode != WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER
-                ) {
-                    // Request the display cutout insets from the decor view because the ones given by
-                    // setOnApplyWindowInsetsListener are not always correct for preloaded views.
-                    window.decorView.rootWindowInsets?.displayCutout?.let { displayCutoutInsets ->
-                        top += displayCutoutInsets.safeInsetTop
-                        bottom += displayCutoutInsets.safeInsetBottom
-                    }
-                }
+//                // Add additional padding to take into account the display cutout, if needed.
+//                if (
+//                    shouldApplyInsetsPadding &&
+//                    android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P &&
+//                    window.attributes.layoutInDisplayCutoutMode != WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER
+//                ) {
+//                    // Request the display cutout insets from the decor view because the ones given by
+//                    // setOnApplyWindowInsetsListener are not always correct for preloaded views.
+//                    window.decorView.rootWindowInsets?.displayCutout?.let { displayCutoutInsets ->
+//                        top += displayCutoutInsets.safeInsetTop
+//                        bottom += displayCutoutInsets.safeInsetBottom
+//                    }
+//                }
 
                 if (!viewModel.isScrollEnabled.value) {
                     val margin =

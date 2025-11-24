@@ -9,10 +9,12 @@
 package org.readium.r2.navigator.epub
 
 import android.app.Activity
+import android.content.Context
 import android.graphics.PointF
 import android.graphics.RectF
 import android.os.Bundle
 import android.util.LayoutDirection
+import android.util.TypedValue
 import android.view.ActionMode
 import android.view.LayoutInflater
 import android.view.View
@@ -34,6 +36,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.withStarted
 import androidx.viewpager.widget.ViewPager
 import kotlin.math.ceil
+import kotlin.math.roundToInt
 import kotlin.reflect.KClass
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -274,6 +277,7 @@ public class EpubNavigatorFragment internal constructor(
         public fun onPageHorizontalEnd(){}
         public fun onForwardEvent(lastDouble: Boolean){}
         public fun onBackwardEvent(){}
+        public fun onImagePageOverload(){}
     }
 
     public interface Listener : OverflowableNavigator.Listener, HyperlinkNavigator.Listener
@@ -449,6 +453,8 @@ public class EpubNavigatorFragment internal constructor(
             EpubLayout.REFLOWABLE, null -> R2ViewPager.PublicationType.EPUB
             EpubLayout.FIXED -> R2ViewPager.PublicationType.FXL // 点击滚动会被移除
         }
+        resourcePager.progression = settings.value.readingProgression
+        resourcePager.listener = paginationListener
         resourcePager.setBackgroundColor(viewModel.settings.value.effectiveBackgroundColor)
         // Let the page views handle the keyboard events.
         resourcePager.isFocusable = false
@@ -897,7 +903,38 @@ public class EpubNavigatorFragment internal constructor(
             if (activity is Activity) {
                 isLandscape = activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
             }
-            return viewModel.shouldInterceptRequest(request, isLandscape, doubleLeft)
+            val topMargin =
+                if (!viewModel.settings.value.scroll) {// && isLandscape
+                    0
+                } else {
+                    (activity.getActionBarSizePx() / resources.displayMetrics.density).roundToInt()
+                }
+
+            val bottomMargin =
+                if (!viewModel.settings.value.scroll) {// && isLandscape
+                    0
+                } else {
+                    100
+                }
+
+            return viewModel.shouldInterceptRequest(request, isLandscape, doubleLeft, topMargin, bottomMargin)
+        }
+
+        fun Context.getActionBarSizePx(): Int {
+            val typedValue = TypedValue()
+            val attrs = intArrayOf(android.R.attr.actionBarSize)
+            val typedArray = obtainStyledAttributes(typedValue.data, attrs)
+            val size = typedArray.getDimensionPixelSize(0, -1)
+            typedArray.recycle()
+            return size
+        }
+
+        fun Context.dpToPx(dp: Int): Int {
+            return TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                dp.toFloat(),
+                resources.displayMetrics
+            ).toInt()
         }
 
         override fun resourceAtUrl(url: Url): Resource? =
