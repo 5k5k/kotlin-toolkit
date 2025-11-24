@@ -141,9 +141,9 @@ public data class HtmlDecorationTemplate(
                         if (asHighlight || isActive) {
                             append("background-color: ${tint.toCss(alpha = alpha)} !important;")
                         }
-                        if (!asHighlight || isActive) {
-                            append("--underline-color: ${tint.toCss()};")
-                        }
+//                        if (!asHighlight || isActive) {
+//                            append("--underline-color: ${tint.toCss()};")
+//                        }
                     }
                     """<div class="$className" style="$css"/>"""
                 },
@@ -153,7 +153,6 @@ public data class HtmlDecorationTemplate(
                 padding: 0 ${padding.left + padding.right}px ${padding.top + padding.bottom}px 0;
                 border-radius: ${cornerRadius}px;
                 box-sizing: border-box;
-                border: 0 solid var(--underline-color);
             }
             
             /* Horizontal (default) */
