@@ -60,9 +60,10 @@ class PublicationRetriever(
 
     suspend fun retrieveFromStorage(
         uri: Uri,
+        password: String? = null
     ): Try<Result, ImportError> {
         val localResult = localPublicationRetriever
-            .retrieve(uri)
+            .retrieve(uri, password)
             .getOrElse { return Try.failure(it) }
 
         val finalResult = moveToBookshelfDir(
@@ -204,12 +205,13 @@ private class LocalPublicationRetriever(
      */
     suspend fun retrieve(
         uri: Uri,
+        password: String? = null
     ): Try<Result, ImportError> {
         val tempFile = uri.copyToTempFile(context, tempDir)
             .getOrElse {
                 return Try.failure(ImportError.ContentResolver(it))
             }
-        return retrieveFromStorage(tempFile, coverUrl = null)
+        return retrieveFromStorage(tempFile, coverUrl = null, password = password)
             .onFailure { tryOrLog { tempFile.delete() } }
     }
 
@@ -228,8 +230,9 @@ private class LocalPublicationRetriever(
         tempFile: File,
         mediaType: MediaType? = null,
         coverUrl: AbsoluteUrl? = null,
+        password: String? = null
     ): Try<Result, ImportError> {
-        val sourceAsset = assetRetriever.retrieve(tempFile, FormatHints(mediaType))
+        val sourceAsset = assetRetriever.retrieve(tempFile, FormatHints(mediaType), password)
             .getOrElse {
                 return Try.failure(ImportError.Publication(PublicationError(it)))
             }

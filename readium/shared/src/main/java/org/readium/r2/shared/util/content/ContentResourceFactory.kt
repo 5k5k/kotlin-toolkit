@@ -23,6 +23,7 @@ public class ContentResourceFactory(
 
     override suspend fun create(
         url: AbsoluteUrl,
+        password: String?
     ): Try<Resource, ResourceFactory.Error> {
         if (!url.isContent) {
             return Try.failure(ResourceFactory.Error.SchemeNotSupported(url.scheme))

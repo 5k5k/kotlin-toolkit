@@ -11,8 +11,8 @@ package org.readium.r2.shared.util.zip
 import java.io.File
 import java.io.IOException
 import java.util.zip.ZipEntry
-import java.util.zip.ZipException
-import java.util.zip.ZipFile
+//import java.util.zip.ZipException
+//import java.util.zip.ZipFile
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -36,13 +36,17 @@ import org.readium.r2.shared.util.io.CountingInputStream
 import org.readium.r2.shared.util.resource.Resource
 import org.readium.r2.shared.util.resource.filename
 import org.readium.r2.shared.util.toUrl
+import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.exception.ZipException
+import net.lingala.zip4j.model.FileHeader
+import net.lingala.zip4j.model.enums.CompressionMethod
 
 internal class FileZipContainer(
     private val archive: ZipFile,
     file: File,
 ) : Container<Resource> {
 
-    private inner class Entry(private val url: Url, private val entry: ZipEntry) :
+    private inner class Entry(private val url: Url,  private val header: FileHeader) :
         Resource {
 
         override val sourceUrl: AbsoluteUrl? = null
@@ -60,7 +64,8 @@ internal class FileZipContainer(
             )
 
         override suspend fun length(): Try<Long, ReadError> =
-            entry.size.takeUnless { it == -1L }
+            header.uncompressedSize
+                .takeUnless { it < 0 }
                 ?.let { Try.success(it) }
                 ?: Try.failure(
                     ReadError.UnsupportedOperation(
@@ -69,10 +74,17 @@ internal class FileZipContainer(
                 )
 
         private val compressedLength: Long? =
-            if (entry.method == ZipEntry.STORED || entry.method == -1) {
-                null
-            } else {
-                entry.compressedSize.takeUnless { it == -1L }
+            try {
+                val method = header.compressionMethod ?: header.compressionMethod // getter
+                // 如果是 STORE（不压缩），则视为未压缩；否则尝试返回 compressedSize
+                if (method == CompressionMethod.STORE) {
+                    null
+                } else {
+                    header.compressedSize.takeUnless { it <= 0 || it == header.uncompressedSize }
+                }
+            } catch (t: Throwable) {
+                // 保险回退：如果无法判断，就根据 compressedSize/uncompressedSize 做简单判断
+                header.compressedSize.takeUnless { it <= 0 || it == header.uncompressedSize }
             }
 
         override suspend fun read(range: LongRange?): Try<ByteArray, ReadError> =
@@ -94,7 +106,7 @@ internal class FileZipContainer(
 
         private suspend fun readFully(): ByteArray =
             withContext(Dispatchers.IO) {
-                archive.getInputStream(entry)
+                archive.getInputStream(header)
                     .use {
                         it.readFully()
                     }
@@ -121,7 +133,7 @@ internal class FileZipContainer(
 
             stream?.close()
 
-            return CountingInputStream(archive.getInputStream(entry))
+            return CountingInputStream(archive.getInputStream(header))
                 .also { stream = it }
         }
 
@@ -140,16 +152,16 @@ internal class FileZipContainer(
     override val sourceUrl: AbsoluteUrl = file.toUrl()
 
     override val entries: Set<Url> =
-        tryOrLog { archive.entries().toList() }
+        tryOrLog { archive.fileHeaders  }
             .orEmpty()
             .filterNot { it.isDirectory }
-            .mapNotNull { entry -> Url.fromDecodedPath(entry.name) }
+            .mapNotNull { header -> Url.fromDecodedPath(header.fileName) }
             .toSet()
 
     override fun get(url: Url): Resource? =
         (url as? RelativeUrl)?.path
             ?.let {
-                tryOrLog { archive.getEntry(it) }
+                tryOrLog { archive.getFileHeader(it) }
             }
             ?.let { Entry(url, it) }
 

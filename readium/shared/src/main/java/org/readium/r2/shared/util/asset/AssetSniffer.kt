@@ -45,6 +45,7 @@ internal class AssetSniffer(
     suspend fun sniff(
         source: Either<Resource, Container<Resource>>,
         hints: FormatHints,
+        password: String? = null
     ): Try<Asset, SniffError> {
         val initialFormat = formatSniffer
             .sniffHints(hints)
@@ -59,7 +60,7 @@ internal class AssetSniffer(
             is Either.Right -> Either.Right(CachingContainer(source.value))
         }
 
-        val asset = sniffContent(initialFormat, source, cachingSource, hints, forceRefine = false)
+        val asset = sniffContent(initialFormat, source, cachingSource, hints, forceRefine = false, password)
             .getOrElse { return Try.failure(SniffError.Reading(it)) }
 
         return asset
@@ -74,6 +75,7 @@ internal class AssetSniffer(
         cache: Either<Readable, Container<Readable>>,
         hints: FormatHints,
         forceRefine: Boolean,
+        password: String? = null
     ): Try<Asset, ReadError> {
         when (cache) {
             is Either.Left ->
@@ -81,18 +83,18 @@ internal class AssetSniffer(
                     .sniffBlob(format, cache.value)
                     .getOrElse { return Try.failure(it) }
                     .takeIf { !forceRefine || it.refines(format) }
-                    ?.let { return sniffContent(it, source, cache, hints, forceRefine = true) }
+                    ?.let { return sniffContent(it, source, cache, hints, forceRefine = true, password) }
 
             is Either.Right ->
                 formatSniffer
                     .sniffContainer(format, cache.value)
                     .getOrElse { return Try.failure(it) }
                     .takeIf { !forceRefine || it.refines(format) }
-                    ?.let { return sniffContent(it, source, cache, hints, forceRefine = true) }
+                    ?.let { return sniffContent(it, source, cache, hints, forceRefine = true, password) }
         }
 
         if (source is Either.Left) {
-            tryOpenArchive(format, source.value)
+            tryOpenArchive(format, source.value, password)
                 .getOrElse { return Try.failure(it) }
                 ?.let {
                     return sniffContent(
@@ -100,7 +102,8 @@ internal class AssetSniffer(
                         Either.Right(it.container),
                         Either.Right(CachingContainer(it.container)),
                         hints,
-                        forceRefine = true
+                        forceRefine = true,
+                        password
                     )
                 }
         }
@@ -116,9 +119,10 @@ internal class AssetSniffer(
     private suspend fun tryOpenArchive(
         format: Format,
         source: Readable,
+        password: String? = null
     ): Try<ContainerAsset?, ReadError> =
         if (!format.isValid()) {
-            archiveOpener.sniffOpen(source)
+            archiveOpener.sniffOpen(source, password)
                 .tryRecover {
                     when (it) {
                         is ArchiveOpener.SniffOpenError.NotRecognized ->
@@ -128,7 +132,7 @@ internal class AssetSniffer(
                     }
                 }
         } else {
-            archiveOpener.open(format, source)
+            archiveOpener.open(format, source, password)
                 .tryRecover {
                     when (it) {
                         is ArchiveOpener.OpenError.FormatNotSupported ->

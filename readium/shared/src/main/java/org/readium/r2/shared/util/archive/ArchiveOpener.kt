@@ -54,6 +54,7 @@ public interface ArchiveOpener {
     public suspend fun open(
         format: Format,
         source: Readable,
+        password: String? = null
     ): Try<ContainerAsset, OpenError>
 
     /**
@@ -61,6 +62,7 @@ public interface ArchiveOpener {
      */
     public suspend fun sniffOpen(
         source: Readable,
+        password: String? = null
     ): Try<ContainerAsset, SniffOpenError>
 }
 
@@ -70,6 +72,7 @@ public interface ArchiveOpener {
 */
 public class CompositeArchiveOpener(
     private val openers: List<ArchiveOpener>,
+    password: String? = null
 ) : ArchiveOpener {
 
     public constructor(vararg factories: ArchiveOpener) :
@@ -78,9 +81,10 @@ public class CompositeArchiveOpener(
     override suspend fun open(
         format: Format,
         source: Readable,
+        password: String?
     ): Try<ContainerAsset, ArchiveOpener.OpenError> {
         for (factory in openers) {
-            factory.open(format, source)
+            factory.open(format, source, password)
                 .getOrElse { error ->
                     when (error) {
                         is ArchiveOpener.OpenError.FormatNotSupported -> null
@@ -95,9 +99,10 @@ public class CompositeArchiveOpener(
 
     override suspend fun sniffOpen(
         source: Readable,
+        password: String?
     ): Try<ContainerAsset, ArchiveOpener.SniffOpenError> {
         for (factory in openers) {
-            factory.sniffOpen(source)
+            factory.sniffOpen(source, password = password)
                 .getOrElse { error ->
                     when (error) {
                         is ArchiveOpener.SniffOpenError.NotRecognized -> null

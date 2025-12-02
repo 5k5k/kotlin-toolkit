@@ -27,10 +27,10 @@ import org.readium.r2.shared.util.resource.Resource
  */
 internal class FileZipArchiveProvider {
 
-    suspend fun sniffOpen(file: File): Try<Container<Resource>, ArchiveOpener.SniffOpenError> {
+    suspend fun sniffOpen(file: File, password: String? = null): Try<Container<Resource>, ArchiveOpener.SniffOpenError> {
         return withContext(Dispatchers.IO) {
             try {
-                val container = FileZipContainer(ZipFile(file), file)
+                val container = FileZipContainer(net.lingala.zip4j.ZipFile(file, "1112".toCharArray()), file)
                 Try.success(container)
             } catch (e: ZipException) {
                 Try.failure(ArchiveOpener.SniffOpenError.NotRecognized)
@@ -53,6 +53,7 @@ internal class FileZipArchiveProvider {
     suspend fun open(
         format: Format,
         file: File,
+        password: String? = null
     ): Try<Container<Resource>, ArchiveOpener.OpenError> {
         if (!format.conformsTo(Specification.Zip)) {
             return Try.failure(
@@ -60,14 +61,14 @@ internal class FileZipArchiveProvider {
             )
         }
 
-        return open(file)
+        return open(file, password)
     }
 
     // Internal for testing purpose
-    internal suspend fun open(file: File): Try<Container<Resource>, ArchiveOpener.OpenError> =
+    internal suspend fun open(file: File, password: String? = null): Try<Container<Resource>, ArchiveOpener.OpenError> =
         withContext(Dispatchers.IO) {
             try {
-                val archive = FileZipContainer(ZipFile(file), file)
+                val archive = FileZipContainer(net.lingala.zip4j.ZipFile(file,(password?:"1112").toCharArray()), file)
                 Try.success(archive)
             } catch (e: FileNotFoundException) {
                 Try.failure(

@@ -112,8 +112,9 @@ public class AssetRetriever private constructor(
     public suspend fun retrieve(
         url: AbsoluteUrl,
         format: Format,
+        password: String? = null
     ): Try<Asset, RetrieveUrlError> {
-        val resource = resourceFactory.create(url)
+        val resource = resourceFactory.create(url, password)
             .getOrElse {
                 when (it) {
                     is ResourceFactory.Error.SchemeNotSupported ->
@@ -122,7 +123,7 @@ public class AssetRetriever private constructor(
             }
 
         val asset = archiveOpener
-            .open(format, resource)
+            .open(format, resource, password)
             .getOrElse {
                 return when (it) {
                     is ArchiveOpener.OpenError.Reading ->
@@ -141,8 +142,9 @@ public class AssetRetriever private constructor(
     public suspend fun retrieve(
         file: File,
         formatHints: FormatHints = FormatHints(),
+        password: String? = null
     ): Try<Asset, RetrieveError> =
-        retrieve(FileResource(file), formatHints)
+        retrieve(FileResource(file), formatHints, password)
 
     /**
      * Retrieves an asset from an [AbsoluteUrl].
@@ -150,8 +152,9 @@ public class AssetRetriever private constructor(
     public suspend fun retrieve(
         url: AbsoluteUrl,
         formatHints: FormatHints = FormatHints(),
+        password: String? = null
     ): Try<Asset, RetrieveUrlError> {
-        val resource = resourceFactory.create(url)
+        val resource = resourceFactory.create(url, password)
             .getOrElse {
                 return Try.failure(
                     when (it) {
@@ -161,7 +164,7 @@ public class AssetRetriever private constructor(
                 )
             }
 
-        return retrieve(resource, formatHints)
+        return retrieve(resource, formatHints, password)
             .mapFailure {
                 when (it) {
                     is RetrieveError.FormatNotSupported -> RetrieveUrlError.FormatNotSupported(
@@ -178,8 +181,9 @@ public class AssetRetriever private constructor(
     public suspend fun retrieve(
         url: AbsoluteUrl,
         mediaType: MediaType,
+        password: String? = null
     ): Try<Asset, RetrieveUrlError> =
-        retrieve(url, FormatHints(mediaType = mediaType))
+        retrieve(url, FormatHints(mediaType = mediaType), password)
 
     /**
      * Retrieves an asset from a local file.
@@ -187,8 +191,9 @@ public class AssetRetriever private constructor(
     public suspend fun retrieve(
         file: File,
         mediaType: MediaType,
+        password: String? = null
     ): Try<Asset, RetrieveError> =
-        retrieve(file, FormatHints(mediaType = mediaType))
+        retrieve(file, FormatHints(mediaType = mediaType), password)
 
     /**
      * Retrieves an asset from an already opened resource.
@@ -196,6 +201,7 @@ public class AssetRetriever private constructor(
     public suspend fun retrieve(
         resource: Resource,
         hints: FormatHints = FormatHints(),
+        password: String? = null
     ): Try<Asset, RetrieveError> {
         val properties = resource.properties()
             .getOrElse { return Try.failure(RetrieveError.Reading(it)) }
@@ -208,7 +214,7 @@ public class AssetRetriever private constructor(
         )
 
         return assetSniffer
-            .sniff(Either.Left(resource), hints + internalHints)
+            .sniff(Either.Left(resource), hints + internalHints, password)
             .mapFailure {
                 when (it) {
                     AssetSniffer.SniffError.NotRecognized -> RetrieveError.FormatNotSupported(it)
@@ -223,9 +229,10 @@ public class AssetRetriever private constructor(
     public suspend fun retrieve(
         container: Container<Resource>,
         hints: FormatHints = FormatHints(),
+        password: String? = null
     ): Try<Asset, RetrieveError> =
         assetSniffer
-            .sniff(Either.Right(container), hints)
+            .sniff(Either.Right(container), hints, password)
             .mapFailure {
                 when (it) {
                     AssetSniffer.SniffError.NotRecognized -> RetrieveError.FormatNotSupported(it)
@@ -239,8 +246,9 @@ public class AssetRetriever private constructor(
     public suspend fun retrieve(
         resource: Resource,
         mediaType: MediaType,
+        password: String? = null
     ): Try<Asset, RetrieveError> =
-        retrieve(resource, FormatHints(mediaType = mediaType))
+        retrieve(resource, FormatHints(mediaType = mediaType), password)
 
     /**
      * Retrieves an asset from an already opened container.
@@ -248,8 +256,9 @@ public class AssetRetriever private constructor(
     public suspend fun retrieve(
         container: Container<Resource>,
         mediaType: MediaType,
+        password: String? = null
     ): Try<Asset, RetrieveError> =
-        retrieve(container, FormatHints(mediaType = mediaType))
+        retrieve(container, FormatHints(mediaType = mediaType), password)
 
     /**
      * Sniffs the format of a file content.
@@ -257,8 +266,9 @@ public class AssetRetriever private constructor(
     public suspend fun sniffFormat(
         file: File,
         hints: FormatHints = FormatHints(),
+        password: String? = null
     ): Try<Format, RetrieveError> =
-        FileResource(file).use { sniffFormat(it, hints) }
+        FileResource(file).use { sniffFormat(it, hints, password) }
 
     /**
      * Sniffs the format of the content available at [url].
@@ -276,8 +286,9 @@ public class AssetRetriever private constructor(
     public suspend fun sniffFormat(
         resource: Resource,
         hints: FormatHints = FormatHints(),
+        password: String? = null
     ): Try<Format, RetrieveError> =
-        retrieve(resource.borrow(), hints)
+        retrieve(resource.borrow(), hints, password)
             .map { asset -> asset.use { it.format } }
 
     /**
@@ -286,7 +297,8 @@ public class AssetRetriever private constructor(
     public suspend fun sniffFormat(
         container: Container<Resource>,
         hints: FormatHints = FormatHints(),
+        password: String? = null
     ): Try<Format, RetrieveError> =
-        retrieve(container, hints)
+        retrieve(container, hints, password)
             .map { asset -> asset.use { it.format } }
 }

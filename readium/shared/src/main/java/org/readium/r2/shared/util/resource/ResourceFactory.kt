@@ -33,6 +33,7 @@ public interface ResourceFactory {
      */
     public suspend fun create(
         url: AbsoluteUrl,
+        password: String? = null
     ): Try<Resource, Error>
 }
 
@@ -48,9 +49,10 @@ public class CompositeResourceFactory(
 
     override suspend fun create(
         url: AbsoluteUrl,
+        password: String?
     ): Try<Resource, ResourceFactory.Error> {
         for (factory in factories) {
-            factory.create(url)
+            factory.create(url, password)
                 .getOrNull()
                 ?.let { return Try.success(it) }
         }

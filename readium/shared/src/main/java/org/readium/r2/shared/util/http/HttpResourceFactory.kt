@@ -20,6 +20,7 @@ public class HttpResourceFactory(
 
     override suspend fun create(
         url: AbsoluteUrl,
+        password: String?
     ): Try<Resource, ResourceFactory.Error> {
         if (!url.isHttp) {
             return Try.failure(ResourceFactory.Error.SchemeNotSupported(url.scheme))

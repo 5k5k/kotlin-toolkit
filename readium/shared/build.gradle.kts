@@ -31,4 +31,6 @@ dependencies {
     testImplementation(libs.robolectric)
 
     androidTestImplementation(libs.kotlin.junit)
+
+    implementation("net.lingala.zip4j:zip4j:2.11.5")
 }

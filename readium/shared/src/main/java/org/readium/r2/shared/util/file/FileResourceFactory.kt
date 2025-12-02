@@ -18,6 +18,7 @@ public class FileResourceFactory : ResourceFactory {
 
     override suspend fun create(
         url: AbsoluteUrl,
+        password: String?
     ): Try<Resource, ResourceFactory.Error> {
         val file = url.toFile()
             ?: return Try.failure(ResourceFactory.Error.SchemeNotSupported(url.scheme))
