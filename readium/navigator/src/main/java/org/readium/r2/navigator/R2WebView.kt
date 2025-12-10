@@ -169,9 +169,6 @@ internal class R2WebView(context: Context, attrs: AttributeSet) : R2BasicWebView
     private var mCalledSuper: Boolean = false
     private var mDecorChildCount: Int = 0
 
-    var clearToEnd = false
-    var clearXToEnd = false
-
     /**
      * Indicates that the pager is in an idle, settled state. The current page
      * is fully in view and no animation is in progress.
@@ -733,8 +730,6 @@ internal class R2WebView(context: Context, attrs: AttributeSet) : R2BasicWebView
                     if (xDiff > mTouchSlop) {
                         if (DEBUG) Timber.v("Starting drag!")
                         mIsBeingDragged = true
-                        clearToEnd = false
-                        clearXToEnd = false
                         mLastMotionX = if (x - mInitialMotionX > 0) {
                             mInitialMotionX + mTouchSlop
                         } else {
@@ -749,8 +744,7 @@ internal class R2WebView(context: Context, attrs: AttributeSet) : R2BasicWebView
                     if (DEBUG) Timber.v("ACTION_UP!")
                     mIsBeingDragged = false
                     mHasAbortedScroller = false
-                    clearToEnd = true
-                    clearXToEnd = true
+                    callback?.onUp()
                     val activePointerIndex = ev.findPointerIndex(mActivePointerId)
                     val x = ev.safeGetX(activePointerIndex)
                     val y = ev.safeGetY(activePointerIndex)

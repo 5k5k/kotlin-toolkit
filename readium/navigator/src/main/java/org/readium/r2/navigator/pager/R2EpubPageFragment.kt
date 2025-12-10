@@ -15,19 +15,16 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PointF
 import android.os.Bundle
-import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import androidx.core.os.BundleCompat
-import androidx.core.view.ViewCompat
 import androidx.core.view.postDelayed
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -60,7 +57,6 @@ import org.readium.r2.shared.InternalReadiumApi
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.AbsoluteUrl
-import timber.log.Timber
 
 @OptIn(ExperimentalReadiumApi::class)
 internal class R2EpubPageFragment : Fragment() {
@@ -186,9 +182,11 @@ internal class R2EpubPageFragment : Fragment() {
         webView.setPadding(0, 0, 0, 0)
         webView.addJavascriptInterface(webView, "Android")
 
-        var endReached = false
-        var endXReached = false
         webView.setOnOverScrolledCallback(object : R2BasicWebView.OnOverScrolledCallback {
+
+            var lastClampedY: Boolean = false
+            var lastClampedX: Boolean = false
+
             override fun onOverScrolled(
                 scrollX: Int,
                 scrollY: Int,
@@ -196,48 +194,20 @@ internal class R2EpubPageFragment : Fragment() {
                 clampedY: Boolean,
             ) {
                 activity ?: return
-
-                val line = webView.contentHeight - webView.height
-                val lineX = webView.getContentWidth() - webView.width
-
-//                Timber.d("yyy scrollY ${scrollY}")
-//                Timber.d("yyy line ${line}")
-//                Timber.d("yyy webView.height ${webView.height}")
-//
-//                Timber.d("xxx scrollX ${scrollX}")
-//                Timber.d("xxx webView.width ${webView.width}")
-//                Timber.d("xxx getContentWidth.width ${webView.getContentWidth()}")
-//                Timber.d("xxx lineX ${lineX}")
-
-                if (scrollY >= line) {
-                    if (webView.clearToEnd) {
-                        endReached = false
-                        webView.clearToEnd = false
-                    }
-                    if (!endReached) {
-                        endReached = true
-                        webView.listener?.onPageEnded(endReached)
-                    }
+                if (webView.scrollMode) {
+                    lastClampedY = clampedY && (scrollY >= webView.contentHeight - webView.height)
                 } else {
-                    if (endReached) {
-                        endReached = false
-                        webView.listener?.onPageEnded(endReached)
-                    }
+                    lastClampedX = clampedX && (scrollX >= webView.getContentWidth() - webView.width)
                 }
+            }
 
-                if (scrollX >= lineX) {
-                    if (webView.clearXToEnd) {
-                        endXReached = false
-                        webView.clearXToEnd = false
-                    }
-                    if (!endXReached) {
-                        endXReached = true
-                        webView.listener?.onPageHorizontalEnd()
-                    }
-                } else {
-                    if (endXReached) {
-                        endXReached = false
-                    }
+            override fun onUp() {
+                if (webView.scrollMode && lastClampedY) {
+                    lastClampedY = false
+                    webView.listener?.onPageEnded(true)
+                } else if (!webView.scrollMode && lastClampedX) {
+                    lastClampedX = false
+                    webView.listener?.onPageHorizontalEnd()
                 }
             }
         })

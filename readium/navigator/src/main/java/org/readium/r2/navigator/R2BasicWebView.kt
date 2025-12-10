@@ -182,6 +182,8 @@ internal open class R2BasicWebView(context: Context, attrs: AttributeSet) : WebV
 
     interface OnOverScrolledCallback {
         fun onOverScrolled(scrollX: Int, scrollY: Int, clampedX: Boolean, clampedY: Boolean)
+
+        fun onUp()
     }
 
     fun setOnOverScrolledCallback(callback: OnOverScrolledCallback) {
@@ -192,6 +194,7 @@ internal open class R2BasicWebView(context: Context, attrs: AttributeSet) : WebV
         // Workaround addressing a bug in the Android WebView where the viewport is scrolled while
         // dragging the text selection handles.
         // See https://github.com/readium/kotlin-toolkit/issues/325
+        // 注释掉可以让webview选择更多内容
         if (isSelecting) {
             return
         }
