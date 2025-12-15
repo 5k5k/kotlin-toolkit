@@ -11,12 +11,15 @@ package org.readium.r2.navigator.pager
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.res.Configuration
 import android.graphics.PointF
 import android.os.Bundle
+import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -216,7 +219,12 @@ internal class R2FXLPageFragment : Fragment() {
     }
 
     fun isLandscape(): Boolean {
-        return requireActivity().resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val displayMetrics = DisplayMetrics()
+        val windowManager = context?.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        windowManager.defaultDisplay.getRealMetrics(displayMetrics)
+        val rate = displayMetrics.widthPixels.toFloat() / displayMetrics.heightPixels.toFloat()
+        val doubleScreen = rate < 1.2
+        return (requireActivity().resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) || doubleScreen
     }
 
     fun getNavigationBarHeightByInsets(activity: Activity): Int {

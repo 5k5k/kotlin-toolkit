@@ -13,12 +13,14 @@ import android.content.Context
 import android.graphics.PointF
 import android.graphics.RectF
 import android.os.Bundle
+import android.util.DisplayMetrics
 import android.util.LayoutDirection
 import android.util.TypedValue
 import android.view.ActionMode
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -99,6 +101,7 @@ import org.readium.r2.shared.util.Url
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.shared.util.resource.Resource
 import org.readium.r2.shared.util.toAbsoluteUrl
+import timber.log.Timber
 
 /**
  * Factory for a [JavascriptInterface] which will be injected in the web views.
@@ -781,7 +784,16 @@ public class EpubNavigatorFragment internal constructor(
     }
 
     public fun isLandscape(): Boolean {
-        return requireActivity().resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        var doubleScreen = false
+        val displayMetrics = DisplayMetrics()
+        context?.let {
+            val windowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            windowManager.defaultDisplay.getRealMetrics(displayMetrics)
+            Timber.d("screen size ${displayMetrics.widthPixels} ${displayMetrics.heightPixels}")
+            val rate = displayMetrics.widthPixels.toFloat() / displayMetrics.heightPixels.toFloat()
+            doubleScreen = rate < 1.2
+        }
+        return (requireActivity().resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) || doubleScreen
     }
 
     // R2BasicWebView.Listener
@@ -901,7 +913,15 @@ public class EpubNavigatorFragment internal constructor(
         override fun shouldInterceptRequest(webView: WebView, request: WebResourceRequest, doubleLeft: Boolean?): WebResourceResponse? {
             val activity = webView.context
             if (activity is Activity) {
-                isLandscape = activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+                var doubleScreen = false
+                val displayMetrics = DisplayMetrics()
+                context?.let {
+                    val windowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
+                    windowManager.defaultDisplay.getRealMetrics(displayMetrics)
+                    val rate = displayMetrics.widthPixels.toFloat() / displayMetrics.heightPixels.toFloat()
+                    doubleScreen = rate < 1.2
+                }
+                isLandscape = (activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) || doubleScreen
             }
             val topMargin =
                 if (!viewModel.settings.value.scroll) {// && isLandscape
