@@ -10,14 +10,15 @@ package org.readium.r2.shared.util.zip
 
 import java.io.File
 import java.io.IOException
-import java.util.zip.ZipEntry
-//import java.util.zip.ZipException
-//import java.util.zip.ZipFile
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.exception.ZipException
+import net.lingala.zip4j.model.FileHeader
+import net.lingala.zip4j.model.enums.CompressionMethod
 import org.readium.r2.shared.InternalReadiumApi
 import org.readium.r2.shared.extensions.readFully
 import org.readium.r2.shared.extensions.tryOrLog
@@ -36,10 +37,6 @@ import org.readium.r2.shared.util.io.CountingInputStream
 import org.readium.r2.shared.util.resource.Resource
 import org.readium.r2.shared.util.resource.filename
 import org.readium.r2.shared.util.toUrl
-import net.lingala.zip4j.ZipFile
-import net.lingala.zip4j.exception.ZipException
-import net.lingala.zip4j.model.FileHeader
-import net.lingala.zip4j.model.enums.CompressionMethod
 
 internal class FileZipContainer(
     private val archive: ZipFile,
@@ -112,9 +109,11 @@ internal class FileZipContainer(
                     }
             }
 
-        private fun readRange(range: LongRange): ByteArray =
-            stream(range.first).readRange(range)
-
+        private fun readRange(range: LongRange): ByteArray {
+            val start = range.first
+            val endExclusive = range.last + 1
+            return stream(start).readRange(start until endExclusive)
+        }
         /**
          * Reading an entry in chunks (e.g. from the HTTP server) can be really slow if the entry
          * is deflated in the archive, because we can't jump to an arbitrary offset in a deflated

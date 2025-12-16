@@ -12,6 +12,7 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.PointF
 import android.graphics.RectF
+import android.os.Build
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.LayoutDirection
@@ -784,16 +785,7 @@ public class EpubNavigatorFragment internal constructor(
     }
 
     public fun isLandscape(): Boolean {
-        var doubleScreen = false
-        val displayMetrics = DisplayMetrics()
-        context?.let {
-            val windowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
-            windowManager.defaultDisplay.getRealMetrics(displayMetrics)
-            Timber.d("screen size ${displayMetrics.widthPixels} ${displayMetrics.heightPixels}")
-            val rate = displayMetrics.widthPixels.toFloat() / displayMetrics.heightPixels.toFloat()
-            doubleScreen = rate < 1.2
-        }
-        return (requireActivity().resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) || doubleScreen
+        return requireActivity().resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     }
 
     // R2BasicWebView.Listener
@@ -914,12 +906,19 @@ public class EpubNavigatorFragment internal constructor(
             val activity = webView.context
             if (activity is Activity) {
                 var doubleScreen = false
-                val displayMetrics = DisplayMetrics()
                 context?.let {
-                    val windowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
-                    windowManager.defaultDisplay.getRealMetrics(displayMetrics)
-                    val rate = displayMetrics.widthPixels.toFloat() / displayMetrics.heightPixels.toFloat()
-                    doubleScreen = rate < 1.2
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        val metrics = activity.windowManager.currentWindowMetrics
+                        val bounds = metrics.bounds
+                        val rate = bounds.width().toFloat() / bounds.height().toFloat()
+                        doubleScreen = rate > 0.85
+                    } else {
+                        val displayMetrics = DisplayMetrics()
+                        val windowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
+                        windowManager.defaultDisplay.getRealMetrics(displayMetrics)
+                        val rate = displayMetrics.widthPixels.toFloat() / displayMetrics.heightPixels.toFloat()
+                        doubleScreen = rate > 0.85
+                    }
                 }
                 isLandscape = (activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) || doubleScreen
             }

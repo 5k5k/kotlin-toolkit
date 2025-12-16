@@ -14,6 +14,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.PointF
+import android.os.Build
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.view.LayoutInflater
@@ -219,11 +220,21 @@ internal class R2FXLPageFragment : Fragment() {
     }
 
     fun isLandscape(): Boolean {
-        val displayMetrics = DisplayMetrics()
-        val windowManager = context?.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        windowManager.defaultDisplay.getRealMetrics(displayMetrics)
-        val rate = displayMetrics.widthPixels.toFloat() / displayMetrics.heightPixels.toFloat()
-        val doubleScreen = rate < 1.2
+        var doubleScreen = false
+        context?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val metrics = requireActivity().windowManager.currentWindowMetrics
+                val bounds = metrics.bounds
+                val rate = bounds.width().toFloat() / bounds.height().toFloat()
+                doubleScreen = rate > 0.85
+            } else {
+                val displayMetrics = DisplayMetrics()
+                val windowManager = it.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+                windowManager.defaultDisplay.getRealMetrics(displayMetrics)
+                val rate = displayMetrics.widthPixels.toFloat() / displayMetrics.heightPixels.toFloat()
+                doubleScreen = rate > 0.85
+            }
+        }
         return (requireActivity().resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) || doubleScreen
     }
 
